@@ -10,6 +10,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -107,8 +108,9 @@ fun wanColorScheme(palette: WanPalette, dark: Boolean): ColorScheme {
 }
 
 fun WanPalette.swatches(dark: Boolean): WanPaletteSwatches {
-    val scheme = wanColorScheme(this, dark)
-    return WanPaletteSwatches(scheme.primary, scheme.secondary, scheme.primaryContainer)
+    val definition = definition()
+    val accent = if (dark) definition.dark else definition.light
+    return WanPaletteSwatches(accent.primary, accent.secondary, accent.primaryContainer)
 }
 
 private fun lightScheme(definition: PaletteDefinition): ColorScheme {
@@ -269,8 +271,9 @@ fun WanTheme(
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    val colorScheme = remember(palette, dark) { wanColorScheme(palette, dark) }
     MaterialTheme(
-        colorScheme = wanColorScheme(palette, dark),
+        colorScheme = colorScheme,
         typography = Typography(),
         shapes = Shapes(
             small = RoundedCornerShape(8.dp),

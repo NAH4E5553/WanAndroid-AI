@@ -185,15 +185,16 @@ private fun ArticleCard(article: Article, onClick: () -> Unit) {
             modifier = Modifier.padding(WanSpacing.page),
             verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
         ) {
+            val metadata = article.displayMetadata(stringResource(R.string.metadata_unknown))
             Text(
                 text = AnnotatedString.fromHtml(article.title),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = if (article.author.isNotBlank()) {
-                    stringResource(R.string.article_author, article.author)
+                text = if (metadata.usesAuthorLabel) {
+                    stringResource(R.string.article_author, metadata.byline)
                 } else {
-                    stringResource(R.string.article_sharer, article.shareUser)
+                    stringResource(R.string.article_sharer, metadata.byline)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -201,19 +202,38 @@ private fun ArticleCard(article: Article, onClick: () -> Unit) {
             Text(
                 text = stringResource(
                     R.string.article_category,
-                    article.superChapterName,
-                    article.chapter
+                    metadata.category
                 ),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = stringResource(R.string.article_time, article.publishedAt),
+                text = stringResource(R.string.article_time, metadata.publishedAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
+}
+
+internal data class ArticleDisplayMetadata(
+    val usesAuthorLabel: Boolean,
+    val byline: String,
+    val category: String,
+    val publishedAt: String
+)
+
+internal fun Article.displayMetadata(unknown: String): ArticleDisplayMetadata {
+    val usesAuthorLabel = author.isNotBlank()
+    return ArticleDisplayMetadata(
+        usesAuthorLabel = usesAuthorLabel,
+        byline = if (usesAuthorLabel) author else shareUser.ifBlank { unknown },
+        category = listOf(superChapterName, chapter)
+            .filter(String::isNotBlank)
+            .joinToString("/")
+            .ifBlank { unknown },
+        publishedAt = publishedAt.ifBlank { unknown }
+    )
 }
 
 @Composable

@@ -39,6 +39,32 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun articleMetadataUsesAuthorFirstAndFallsBackSafely() {
+        val article = article(1).copy(
+            author = "Author",
+            shareUser = "Sharer",
+            superChapterName = "Parent",
+            chapter = "Child",
+            publishedAt = "Today"
+        )
+
+        assertEquals(
+            ArticleDisplayMetadata(true, "Author", "Parent/Child", "Today"),
+            article.displayMetadata("Unknown")
+        )
+        assertEquals(
+            ArticleDisplayMetadata(false, "Unknown", "Unknown", "Unknown"),
+            article.copy(
+                author = " ",
+                shareUser = "",
+                superChapterName = "",
+                chapter = "",
+                publishedAt = ""
+            ).displayMetadata("Unknown")
+        )
+    }
+
+    @Test
     fun initialSuccessPublishesArticlesAndCursor() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)

@@ -48,10 +48,14 @@ internal class PreferencesThemeDataSource @Inject constructor(
 internal fun Flow<Preferences>.asThemePreferencesState(): Flow<ThemePreferencesState> =
     map { ThemePreferencesState(it.toThemePreferences()) }
         .catch { error ->
-            if (error is IOException) {
-                emit(ThemePreferencesState(readFailed = true))
-            } else {
-                throw error
+            when (error) {
+                is CancellationException -> throw error
+
+                is IOException, is IllegalStateException -> {
+                    emit(ThemePreferencesState(readFailed = true))
+                }
+
+                else -> throw error
             }
         }
 

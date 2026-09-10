@@ -522,7 +522,4 @@ private fun ThemePalettePreference.toWanPalette(): WanPalette = when (this) {
 }
 
 @Composable
-private fun isCurrentThemeDark(): Boolean = when {
-    MaterialTheme.colorScheme.background == Color.Unspecified -> isSystemInDarkTheme()
-    else -> MaterialTheme.colorScheme.background.luminance() < 0.5f
-}
+private fun isCurrentThemeDark(): Boolean = MaterialTheme.colorScheme.background.luminance() < 0.5f

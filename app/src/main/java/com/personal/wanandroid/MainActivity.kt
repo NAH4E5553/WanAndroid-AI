@@ -9,7 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
             val viewModel: AppViewModel = hiltViewModel()
             val state by viewModel.themeState.collectAsStateWithLifecycle()
             val resolvedDark = state.preferences.mode.resolveDark(isSystemInDarkTheme())
-            SideEffect {
+            LaunchedEffect(resolvedDark) {
                 val transparent = android.graphics.Color.TRANSPARENT
                 val style = SystemBarStyle.auto(transparent, transparent) { resolvedDark }
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)

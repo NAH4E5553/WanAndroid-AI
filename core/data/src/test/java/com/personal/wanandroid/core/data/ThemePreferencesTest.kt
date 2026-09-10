@@ -31,13 +31,15 @@ class ThemePreferencesTest {
     }
 
     @Test
-    fun ioReadFailureIsObservableAndUsesDefaults() = runTest {
-        val state = flow<Preferences> { throw IOException("fixture") }
-            .asThemePreferencesState()
-            .first()
+    fun readFailuresAreObservableAndUseDefaults() = runTest {
+        listOf(IOException("fixture"), IllegalStateException("fixture")).forEach { failure ->
+            val state = flow<Preferences> { throw failure }
+                .asThemePreferencesState()
+                .first()
 
-        assertTrue(state.readFailed)
-        assertEquals(ThemePreferences(), state.preferences)
+            assertTrue(state.readFailed)
+            assertEquals(ThemePreferences(), state.preferences)
+        }
     }
 
     @Test
