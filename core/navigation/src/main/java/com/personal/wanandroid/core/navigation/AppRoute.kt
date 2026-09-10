@@ -17,3 +17,6 @@ data object SearchRoute : NavKey
 
 @Serializable
 data object ThemeSettingsRoute : NavKey
+
+@Serializable
+data object DailyQuestionsRoute : NavKey

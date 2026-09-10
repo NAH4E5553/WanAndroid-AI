@@ -17,6 +17,8 @@ interface ArticleRepository {
 
     suspend fun questions(): DataResult<List<Article>>
 
+    suspend fun questionPage(page: Int): DataResult<PageResult<Article>>
+
     suspend fun topics(): DataResult<List<Topic>>
 
     suspend fun search(page: Int, keyword: String): DataResult<PageResult<Article>>
@@ -30,7 +32,14 @@ class DefaultArticleRepository @Inject constructor(private val source: ArticleNe
         }
 
     override suspend fun questions(): DataResult<List<Article>> =
-        request({ source.questions() }) { it.datas.take(5).map { dto -> dto.toArticle() } }
+        request({ source.questions(FIRST_QUESTION_PAGE) }) {
+            it.datas.take(HOME_QUESTION_LIMIT).map { dto -> dto.toArticle() }
+        }
+
+    override suspend fun questionPage(page: Int): DataResult<PageResult<Article>> =
+        request({ source.questions(page) }) { body ->
+            PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+        }
 
     override suspend fun topics(): DataResult<List<Topic>> = request({
         source.topics()
@@ -64,6 +73,11 @@ class DefaultArticleRepository @Inject constructor(private val source: ArticleNe
         DataResult.Failure(DataError.NETWORK)
     } catch (_: Exception) {
         DataResult.Failure(DataError.INVALID_RESPONSE)
+    }
+
+    private companion object {
+        const val FIRST_QUESTION_PAGE = 1
+        const val HOME_QUESTION_LIMIT = 5
     }
 }
 

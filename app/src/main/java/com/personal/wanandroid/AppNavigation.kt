@@ -20,6 +20,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.personal.wanandroid.core.navigation.ArticleRoute
+import com.personal.wanandroid.core.navigation.DailyQuestionsRoute
 import com.personal.wanandroid.core.navigation.LoginRoute
 import com.personal.wanandroid.core.navigation.MainRoute
 import com.personal.wanandroid.core.navigation.SearchRoute
@@ -27,6 +28,7 @@ import com.personal.wanandroid.core.navigation.ThemeSettingsRoute
 import com.personal.wanandroid.core.navigation.popIfCurrent
 import com.personal.wanandroid.feature.article.ArticleScreen
 import com.personal.wanandroid.feature.auth.LoginScreen
+import com.personal.wanandroid.feature.home.DailyQuestionsRoute as DailyQuestionsDestination
 import com.personal.wanandroid.feature.home.HomeRoute
 import com.personal.wanandroid.feature.home.SearchScreen
 import com.personal.wanandroid.feature.profile.ProfileRoute
@@ -47,6 +49,9 @@ fun AppNavigation() {
             entry<MainRoute> {
                 MainTabs(
                     onSearch = { if (stack.lastOrNull() == MainRoute) stack.add(SearchRoute) },
+                    onQuestionsClick = {
+                        if (stack.lastOrNull() == MainRoute) stack.add(DailyQuestionsRoute)
+                    },
                     onArticleClick = { url, title, articleId ->
                         if (stack.lastOrNull() == MainRoute) {
                             stack.add(ArticleRoute(url, title, articleId))
@@ -59,6 +64,16 @@ fun AppNavigation() {
                 )
             }
             entry<SearchRoute> { SearchScreen(onBack = { stack.popIfCurrent(SearchRoute) }) }
+            entry<DailyQuestionsRoute> {
+                DailyQuestionsDestination(
+                    onBack = { stack.popIfCurrent(DailyQuestionsRoute) },
+                    onArticleClick = { url, title, articleId ->
+                        if (stack.lastOrNull() == DailyQuestionsRoute) {
+                            stack.add(ArticleRoute(url, title, articleId))
+                        }
+                    }
+                )
+            }
             entry<LoginRoute> { LoginScreen(onBack = { stack.popIfCurrent(LoginRoute) }) }
             entry<ThemeSettingsRoute> {
                 ThemeSettingsDestination(
@@ -75,6 +90,7 @@ fun AppNavigation() {
 @Composable
 private fun MainTabs(
     onSearch: () -> Unit,
+    onQuestionsClick: () -> Unit,
     onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
     onLogin: () -> Unit,
     onThemeSettings: () -> Unit
@@ -100,6 +116,7 @@ private fun MainTabs(
             when (selected) {
                 0 -> HomeRoute(
                     onSearch = onSearch,
+                    onQuestionsClick = onQuestionsClick,
                     onArticleClick = onArticleClick,
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )

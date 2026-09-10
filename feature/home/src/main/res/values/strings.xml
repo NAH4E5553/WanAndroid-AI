@@ -1,8 +1,9 @@
 <resources>
     <string name="search_hint">搜索文章、技术与知识</string>
     <string name="daily_question">每日一问</string>
+    <string name="question_tag">问答</string>
+    <string name="see_more">查看更多</string>
     <string name="latest_articles">最新博文</string>
-    <string name="question_pending">工程骨架阶段：问答接口已定义，5 条纵向循环展示待接入。</string>
     <string name="search_pending">搜索入口已建立，输入及结果列表待接入。</string>
     <string name="back">返回</string>
     <string name="article_author">作者：%1$s</string>
@@ -11,7 +12,9 @@
     <string name="article_time">时间：%1$s</string>
     <string name="metadata_unknown">未知</string>
     <string name="articles_empty">暂时没有文章</string>
+    <string name="questions_empty">暂时没有问答</string>
     <string name="articles_end">已经到底了</string>
+    <string name="questions_end">没有更多问答了</string>
     <string name="retry">重试</string>
     <string name="error_network">网络连接失败，请检查网络后重试。</string>
     <string name="error_service">服务暂时不可用，请稍后重试。</string>
