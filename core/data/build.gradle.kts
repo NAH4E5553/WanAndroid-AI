@@ -7,5 +7,6 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.database)
     implementation(libs.coroutines)
+    implementation(libs.datastore.preferences)
     testImplementation(libs.coroutines.test)
 }

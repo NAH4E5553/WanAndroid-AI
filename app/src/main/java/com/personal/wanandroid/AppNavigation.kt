@@ -23,12 +23,14 @@ import com.personal.wanandroid.core.navigation.ArticleRoute
 import com.personal.wanandroid.core.navigation.LoginRoute
 import com.personal.wanandroid.core.navigation.MainRoute
 import com.personal.wanandroid.core.navigation.SearchRoute
+import com.personal.wanandroid.core.navigation.ThemeSettingsRoute
 import com.personal.wanandroid.core.navigation.popIfCurrent
 import com.personal.wanandroid.feature.article.ArticleScreen
 import com.personal.wanandroid.feature.auth.LoginScreen
 import com.personal.wanandroid.feature.home.HomeRoute
 import com.personal.wanandroid.feature.home.SearchScreen
-import com.personal.wanandroid.feature.profile.ProfileScreen
+import com.personal.wanandroid.feature.profile.ProfileRoute
+import com.personal.wanandroid.feature.profile.ThemeSettingsRoute as ThemeSettingsDestination
 import com.personal.wanandroid.feature.topics.TopicsScreen
 
 @Composable
@@ -50,11 +52,19 @@ fun AppNavigation() {
                             stack.add(ArticleRoute(url, title, articleId))
                         }
                     },
-                    onLogin = { if (stack.lastOrNull() == MainRoute) stack.add(LoginRoute) }
+                    onLogin = { if (stack.lastOrNull() == MainRoute) stack.add(LoginRoute) },
+                    onThemeSettings = {
+                        if (stack.lastOrNull() == MainRoute) stack.add(ThemeSettingsRoute)
+                    }
                 )
             }
             entry<SearchRoute> { SearchScreen(onBack = { stack.popIfCurrent(SearchRoute) }) }
             entry<LoginRoute> { LoginScreen(onBack = { stack.popIfCurrent(LoginRoute) }) }
+            entry<ThemeSettingsRoute> {
+                ThemeSettingsDestination(
+                    onBack = { stack.popIfCurrent(ThemeSettingsRoute) }
+                )
+            }
             entry<ArticleRoute> { route ->
                 ArticleScreen(title = route.title, onBack = { stack.popIfCurrent(route) })
             }
@@ -66,7 +76,8 @@ fun AppNavigation() {
 private fun MainTabs(
     onSearch: () -> Unit,
     onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
+    onThemeSettings: () -> Unit
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val stateHolder = rememberSaveableStateHolder()
@@ -95,7 +106,11 @@ private fun MainTabs(
 
                 1 -> TopicsScreen(Modifier.fillMaxSize().padding(padding))
 
-                2 -> ProfileScreen(onLogin, Modifier.fillMaxSize().padding(padding))
+                2 -> ProfileRoute(
+                    onLogin = onLogin,
+                    onThemeSettings = onThemeSettings,
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
             }
         }
     }

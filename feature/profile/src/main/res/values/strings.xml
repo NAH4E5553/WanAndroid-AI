@@ -1,11 +1,30 @@
 <resources>
     <string name="profile">个人中心</string>
-    <string name="account_pending">工程骨架阶段：会话与账号资料待接入。</string>
     <string name="login">登录</string>
+    <string name="login_supporting">登录后同步收藏状态</string>
+    <string name="guest_avatar">访</string>
+    <string name="my_content">我的内容</string>
+    <string name="preferences">偏好设置</string>
+    <string name="pending">待接入</string>
     <string name="collections">我的收藏</string>
-    <string name="collections_pending">收藏与取消收藏功能待接入。</string>
     <string name="history">阅读历史</string>
-    <string name="history_pending">独立历史表已定义，历史列表待接入。</string>
     <string name="offline">离线内容</string>
-    <string name="offline_pending">正文缓存表已定义，缓存和离线阅读待实现。</string>
+    <string name="appearance_and_theme">外观与主题</string>
+    <string name="palette_style">配色风格</string>
+    <string name="display_mode">显示模式</string>
+    <string name="palette_ink_teal">墨青绿</string>
+    <string name="palette_slate_blue">石板蓝</string>
+    <string name="palette_warm_amber">暖琥珀</string>
+    <string name="palette_berry_rose">莓果玫瑰</string>
+    <string name="mode_follow_system">跟随系统</string>
+    <string name="mode_light">浅色</string>
+    <string name="mode_dark">深色</string>
+    <string name="theme_summary">%1$s · %2$s</string>
+    <string name="theme_applies_immediately">选择后即时生效</string>
+    <string name="theme_saving">正在保存主题…</string>
+    <string name="theme_save_failed">主题保存失败，已恢复原设置</string>
+    <string name="theme_read_failed">无法读取已保存主题，当前使用默认设置</string>
+    <string name="theme_selected">已选中</string>
+    <string name="theme_not_selected">未选中</string>
+    <string name="back">返回</string>
 </resources>

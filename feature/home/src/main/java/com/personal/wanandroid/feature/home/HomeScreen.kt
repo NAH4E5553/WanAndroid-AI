@@ -189,26 +189,29 @@ private fun ArticleCard(article: Article, onClick: () -> Unit) {
                 text = AnnotatedString.fromHtml(article.title),
                 style = MaterialTheme.typography.titleMedium
             )
-            val author = article.author.ifBlank { stringResource(R.string.author_unknown) }
             Text(
-                text = author,
+                text = if (article.author.isNotBlank()) {
+                    stringResource(R.string.article_author, article.author)
+                } else {
+                    stringResource(R.string.article_sharer, article.shareUser)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (article.chapter.isNotBlank()) {
-                Text(
-                    text = article.chapter,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            if (article.publishedAt.isNotBlank()) {
-                Text(
-                    text = article.publishedAt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = stringResource(
+                    R.string.article_category,
+                    article.superChapterName,
+                    article.chapter
+                ),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.article_time, article.publishedAt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

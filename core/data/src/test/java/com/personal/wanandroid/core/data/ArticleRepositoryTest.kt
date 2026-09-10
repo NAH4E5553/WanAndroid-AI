@@ -53,6 +53,40 @@ class ArticleRepositoryTest {
     }
 
     @Test
+    fun articleMetadataKeepsAuthorAndSharerSeparate() = runTest {
+        val fake = FakeSource()
+        fake.page = WanResponse(
+            0,
+            data = WanPageDto(
+                datas = listOf(
+                    ArticleDto(
+                        id = 7,
+                        title = "Example",
+                        link = "https://example.org/7",
+                        author = "",
+                        shareUser = "Sharer",
+                        superChapterName = "Parent",
+                        chapterName = "Child",
+                        niceDate = "1天前"
+                    )
+                ),
+                curPage = 1,
+                over = true,
+                total = 1
+            )
+        )
+
+        val result = DefaultArticleRepository(fake).articles(0) as DataResult.Success
+        val article = result.value.items.single()
+
+        assertEquals("", article.author)
+        assertEquals("Sharer", article.shareUser)
+        assertEquals("Parent", article.superChapterName)
+        assertEquals("Child", article.chapter)
+        assertEquals("1天前", article.publishedAt)
+    }
+
+    @Test
     fun errorAndMissingDataAreNotSuccessfulEmptyLists() = runTest {
         val fake = FakeSource()
         fake.page = WanResponse(-1001)
