@@ -73,3 +73,4 @@
 - 新增回归测试扫描所有实际调用 `ocr` 的生成步骤；调用集合变化或任一步未禁用自升级都会失败。
 - 本地配置回归测试 38 项通过；生成适配器在线下载、固定哈希校验和 Python/Bash/JavaScript 语法检查通过；actionlint 1.7.7 检查两份工作流通过。
 - `./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug` 成功，641 个任务无失败。由于 OCR 始终从 PR 的 `base.sha` 加载受信适配器，修复 PR 自身仍会使用旧版本；真实 GitHub Runner 和模型评论链路必须在修复合并后的下一条可审查 PR 上验证。
+- PR #4 的旧适配器本次未撞上竞态并完成审查，指出调用扫描正则会遗漏 `./bin/ocr` 等路径形式。该意见已接受：扩大命令前缀识别范围，并增加直接、相对路径、变量路径和虚拟环境路径样例。

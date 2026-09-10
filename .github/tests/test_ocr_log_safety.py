@@ -66,13 +66,22 @@ class OcrLogSafety(unittest.TestCase):
         self.assertEqual("1.11.1", self.action["inputs"]["ocr_version"]["default"])
 
     def test_every_action_owned_ocr_invocation_disables_self_update(self):
+        invocation_pattern = re.compile(r"(?:^|[\s;&|(`/.$\"'])ocr\s+\S")
+        for command in (
+            "ocr review",
+            "./bin/ocr review",
+            "$OCR_BIN/ocr review",
+            ".venv/bin/ocr review",
+        ):
+            self.assertRegex(command, invocation_pattern)
+
         invokers = []
         for name, step in self.steps.items():
             code = "\n".join(
                 line for line in step.get("run", "").splitlines()
                 if not re.match(r"^\s*#", line)
             )
-            if re.search(r"(?:^|[\s;&|(`])ocr\s+\S", code):
+            if invocation_pattern.search(code):
                 invokers.append(name)
 
         self.assertEqual(
