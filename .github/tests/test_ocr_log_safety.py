@@ -65,6 +65,23 @@ class OcrLogSafety(unittest.TestCase):
         self.assertEqual("always()", self.steps["Remove private review result"]["if"])
         self.assertEqual("1.11.1", self.action["inputs"]["ocr_version"]["default"])
 
+    def test_every_action_owned_ocr_invocation_disables_self_update(self):
+        invokers = []
+        for name, step in self.steps.items():
+            code = "\n".join(
+                line for line in step.get("run", "").splitlines()
+                if not re.match(r"^\s*#", line)
+            )
+            if re.search(r"(?:^|[\s;&|(`])ocr\s+\S", code):
+                invokers.append(name)
+
+        self.assertEqual(
+            {"Install OpenCodeReview", "Configure OCR", "Run OpenCodeReview"},
+            set(invokers),
+        )
+        for name in invokers:
+            self.assertEqual("1", self.steps[name].get("env", {}).get("OCR_NO_UPDATE"))
+
     def test_generated_bash_and_javascript_parse(self):
         for step in self.steps.values():
             if step.get("shell") == "bash":

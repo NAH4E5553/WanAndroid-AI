@@ -63,6 +63,22 @@ def adapt_action(source):
     source = replace_once(source, "    default: 'true'\n  sticky_summary:", "    default: 'false'\n  sticky_summary:")
     source = replace_step(source, "Upload review artifacts", "")
 
+    # The composite action owns this exact-version installation for the whole
+    # review. The CLI launcher otherwise starts a detached npm self-update on
+    # every invocation, which can remove the global launcher/package tree
+    # between the version, config, and review steps (upstream issue #703).
+    for name in ("Install OpenCodeReview", "Configure OCR", "Run OpenCodeReview"):
+        start, end = step_span(source, name)
+        step = replace_once(
+            source[start:end],
+            "      env:\n",
+            '''      env:
+        # Keep the Action-owned runtime stable; do not self-update mid-review.
+        OCR_NO_UPDATE: "1"
+''',
+        )
+        source = source[:start] + step + source[end:]
+
     start, end = step_span(source, "Configure OCR")
     configure = source[start:end]
     configure = replace_once(configure, "      run: |\n", '''      run: |

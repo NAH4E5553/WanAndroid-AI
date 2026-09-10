@@ -65,6 +65,7 @@ prepare_ocr_action.py 只下载固定提交的两个公开源码文件并校验 
 不使用 pull_request_target，不接收评论命令，不审查外部 Fork，不添加历史审查工作流，不在 main push 上触发。
 工作流默认 contents:read；只有 review job 获得 pull-requests:write，用于审查评论。
 保持上游 Action 来源提交 8d023aafcec05f8ba5628fca3eaba88078e5d201 和 CLI 1.11.1，不使用 latest。
+Action 自己负责安装并固定本次运行的 CLI；生成的 Install、Configure、Run 三个 OCR 调用步骤均设置 `OCR_NO_UPDATE=1`，禁止启动器在同一审查期间异步执行全局 npm 自升级。配置回归测试会扫描所有实际调用 `ocr` 的步骤，新增调用未携带该环境变量时直接失败。
 不再直接执行原始远程 Action，而是运行经固定 SHA-256 校验与日志安全适配后生成的本地 Action。
 工作流显式检出 PR 的 base.sha，适配脚本、哈希和规则只能来自该基线；不能执行 PR head 的准备脚本或本地 Action。
 检出保留完整 Git 历史、不持久化 Git 凭据；审查读取 head SHA 的 Git 对象，不检出或构建 PR head。缺少对象或 merge-base 无法计算直接失败，不退回空范围。
