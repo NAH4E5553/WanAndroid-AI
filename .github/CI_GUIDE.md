@@ -4,9 +4,9 @@
 
 已在本地适配：Android CI、分类脚本、配置回归测试、OCR 工作流和审查规则。
 本配置只针对新项目，商城保持只读；首次提交包含工程骨架及 CI/OCR 配置，首次远端 Android CI 六项通过，main 分支保护已配置。
-用户已反馈自行配置了 GitHub Secrets/Variables；本地没有读取或核验其值，也没有执行真实模型调用。
-本地 origin 已关联 https://github.com/NAH4E5553/WanAndroid-AI.git，但关联不等于已上传工程。
-GitHub 首次 push 的 Android CI 结果已验证；PR 流程及 OCR 实际评论仍须通过后续真实 PR 验证，不能由本地检查替代。
+GitHub Secrets/Variables 的名称已核对齐全，未读取或输出 Secret 值。经用户确认代码上下文外发和费用边界后，仓库变量 OCR_ENABLED 已设为 true。
+origin 已关联并上传至 https://github.com/NAH4E5553/WanAndroid-AI.git。
+GitHub 首次 push 的 Android CI 六项检查已通过；PR #1 的六项必需检查及首次 OCR 真实模型调用也已通过，OCR 汇总为无发现、无行级评论。增量范围仍由后续 synchronize 运行持续核对。
 
 ## Android CI
 
@@ -93,7 +93,7 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 
 日志抑制的代价是故障详情更少；本地验证不能替代真实 PR 的首次接入验证。
 
-## 新仓库启用（本轮不远程操作）
+## 新仓库启用（当前已启用）
 
 在新仓库 Settings → Secrets and variables → Actions 单独设置：
 
@@ -103,7 +103,7 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 | Secret | OCR_LLM_AUTH_TOKEN | 新项目模型凭据 |
 | Variable | OCR_LLM_MODEL | 模型名称 |
 | Variable | OCR_LLM_USE_ANTHROPIC | Anthropic 协议 true；OpenAI 兼容协议 false |
-| Variable | OCR_ENABLED | 保持 false；适配器进入 main 且确认外发/费用边界后再设 true |
+| Variable | OCR_ENABLED | 当前为 true；适配器已进入 main，且已确认外发/费用边界 |
 
 优先使用新项目独立凭据，不从商城读取/复制 Secret；不要在聊天、Git、PR 或日志贴凭据。
 启用前确认允许把审查所需 Diff/代码上下文发送给所配置的模型服务，设置额度并观察耗时。
@@ -124,8 +124,8 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 1. 本地适配和验证（已完成）。
 2. 工程骨架及安全适配器进入 main，首次 Android CI 六项通过（已完成）。
 3. main 分支保护配置并回查（已完成）。
-4. 通过真实功能 PR 验证 PR 必需检查；OCR 保持关闭。
-5. 只有在再次确认代码外发和费用边界后才启用 OCR，并单独验证真实评论链路。
+4. 通过真实功能 PR 验证 PR 必需检查（PR #1 已完成）。
+5. 再次确认代码外发和费用边界后启用 OCR，并单独验证真实评论链路（PR #1 首次完整审查已完成；后续继续验证增量和失败路径）。
 
 参考：
 

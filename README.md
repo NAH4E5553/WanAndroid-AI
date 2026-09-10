@@ -30,7 +30,7 @@ Release 验证：`./gradlew :app:assembleRelease`，默认不配置正式签名�
 CI 使用相同 Gradle 检查，另有配置回归测试和工作流语法校验；见 [.github/CI_GUIDE.md](.github/CI_GUIDE.md)。
 origin 指向 https://github.com/NAH4E5553/WanAndroid-AI.git；初始版本包含工程骨架、CI/OCR 配置及验证文档。
 首次远端 CI 的六项检查均已通过；main 已要求 PR、分支同步、讨论解决及六项必需检查，并禁止管理员绕过、强推和删除。
-OCR 工作流、规则与日志安全适配器已就绪，默认关闭；启用和真实模型验证需单独确认。
+OCR 工作流、规则与日志安全适配器已就绪；经用户确认代码上下文外发和费用边界后，仓库已启用 OCR，并在 PR #1 完成首次真实模型审查，结果为无发现。OCR 仍是辅助检查，不是必需合并门槛。
 本工程只保留 debug/release；不使用来源商城的 devDebug/prodRelease 任务。
 
 ## 文档
