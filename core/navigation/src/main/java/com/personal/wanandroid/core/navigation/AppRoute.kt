@@ -14,3 +14,6 @@ data object LoginRoute : NavKey
 
 @Serializable
 data object SearchRoute : NavKey
+
+@Serializable
+data object ThemeSettingsRoute : NavKey

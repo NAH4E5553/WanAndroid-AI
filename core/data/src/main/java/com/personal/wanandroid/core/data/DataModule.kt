@@ -12,4 +12,16 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindArticleRepository(implementation: DefaultArticleRepository): ArticleRepository
+
+    @Binds
+    @Singleton
+    internal abstract fun bindThemePreferencesDataSource(
+        implementation: PreferencesThemeDataSource
+    ): ThemePreferencesDataSource
+
+    @Binds
+    @Singleton
+    internal abstract fun bindThemePreferencesRepository(
+        implementation: DefaultThemePreferencesRepository
+    ): ThemePreferencesRepository
 }

@@ -5,7 +5,11 @@
     <string name="question_pending">工程骨架阶段：问答接口已定义，5 条纵向循环展示待接入。</string>
     <string name="search_pending">搜索入口已建立，输入及结果列表待接入。</string>
     <string name="back">返回</string>
-    <string name="author_unknown">未知作者</string>
+    <string name="article_author">作者：%1$s</string>
+    <string name="article_sharer">分享者：%1$s</string>
+    <string name="article_category">分类：%1$s</string>
+    <string name="article_time">时间：%1$s</string>
+    <string name="metadata_unknown">未知</string>
     <string name="articles_empty">暂时没有文章</string>
     <string name="articles_end">已经到底了</string>
     <string name="retry">重试</string>

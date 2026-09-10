@@ -22,6 +22,7 @@ android {
     }
 }
 dependencies {
+    implementation(projects.core.data)
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
     implementation(projects.feature.home)
@@ -34,4 +35,6 @@ dependencies {
     implementation(libs.navigation.runtime)
     implementation(libs.navigation.ui)
     implementation(libs.androidx.lifecycle.navigation)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.hilt.compose)
 }

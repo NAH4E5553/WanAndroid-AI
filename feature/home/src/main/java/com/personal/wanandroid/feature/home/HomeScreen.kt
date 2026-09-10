@@ -185,32 +185,55 @@ private fun ArticleCard(article: Article, onClick: () -> Unit) {
             modifier = Modifier.padding(WanSpacing.page),
             verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
         ) {
+            val metadata = article.displayMetadata(stringResource(R.string.metadata_unknown))
             Text(
                 text = AnnotatedString.fromHtml(article.title),
                 style = MaterialTheme.typography.titleMedium
             )
-            val author = article.author.ifBlank { stringResource(R.string.author_unknown) }
             Text(
-                text = author,
+                text = if (metadata.usesAuthorLabel) {
+                    stringResource(R.string.article_author, metadata.byline)
+                } else {
+                    stringResource(R.string.article_sharer, metadata.byline)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (article.chapter.isNotBlank()) {
-                Text(
-                    text = article.chapter,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            if (article.publishedAt.isNotBlank()) {
-                Text(
-                    text = article.publishedAt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = stringResource(
+                    R.string.article_category,
+                    metadata.category
+                ),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.article_time, metadata.publishedAt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
+}
+
+internal data class ArticleDisplayMetadata(
+    val usesAuthorLabel: Boolean,
+    val byline: String,
+    val category: String,
+    val publishedAt: String
+)
+
+internal fun Article.displayMetadata(unknown: String): ArticleDisplayMetadata {
+    val usesAuthorLabel = author.isNotBlank()
+    return ArticleDisplayMetadata(
+        usesAuthorLabel = usesAuthorLabel,
+        byline = if (usesAuthorLabel) author else shareUser.ifBlank { unknown },
+        category = listOf(superChapterName, chapter)
+            .filter(String::isNotBlank)
+            .joinToString("/")
+            .ifBlank { unknown },
+        publishedAt = publishedAt.ifBlank { unknown }
+    )
 }
 
 @Composable

@@ -15,6 +15,7 @@ data class ArticleDto(
     val link: String,
     val author: String? = null,
     val shareUser: String? = null,
+    val superChapterName: String? = null,
     val chapterName: String? = null,
     val niceDate: String? = null,
     val collect: Boolean = false

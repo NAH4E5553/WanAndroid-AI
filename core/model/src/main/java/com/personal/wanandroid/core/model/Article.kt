@@ -6,6 +6,8 @@ data class Article(
     val title: String,
     val url: String,
     val author: String,
+    val shareUser: String,
+    val superChapterName: String,
     val chapter: String,
     val publishedAt: String,
     val collected: Boolean
