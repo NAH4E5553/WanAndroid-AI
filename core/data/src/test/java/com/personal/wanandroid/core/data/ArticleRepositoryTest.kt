@@ -50,6 +50,26 @@ class ArticleRepositoryTest {
         )
         val result = DefaultArticleRepository(fake).questions() as DataResult.Success
         assertEquals(5, result.value.size)
+        assertEquals(1, fake.questionRequestPage)
+    }
+
+    @Test
+    fun questionPageUsesOneBasedRequestCursorAndOverFlag() = runTest {
+        val fake = FakeSource()
+        fake.page = WanResponse(
+            0,
+            data = WanPageDto((1L..8L).map { article(it) }, 1, false, 8)
+        )
+
+        val result = DefaultArticleRepository(fake).questionPage(1) as DataResult.Success
+
+        assertEquals(8, result.value.items.size)
+        assertEquals(2, result.value.nextPage)
+        assertEquals(1, fake.questionRequestPage)
+
+        fake.page = WanResponse(0, data = WanPageDto(emptyList(), 2, true, 8))
+        val terminal = DefaultArticleRepository(fake).questionPage(2) as DataResult.Success
+        assertNull(terminal.value.nextPage)
     }
 
     @Test
@@ -138,6 +158,7 @@ private class FakeSource : ArticleNetworkDataSource {
         data = WanPageDto(listOf(article(1)), 1, true, 1)
     )
     var requestPage: Int? = null
+    var questionRequestPage: Int? = null
     var failure: Exception? = null
     override suspend fun articles(
         page: Int,
@@ -147,7 +168,11 @@ private class FakeSource : ArticleNetworkDataSource {
         requestPage = page
         return this.page
     }
-    override suspend fun questions() = page
+    override suspend fun questions(page: Int): WanResponse<WanPageDto<ArticleDto>> {
+        failure?.let { throw it }
+        questionRequestPage = page
+        return this.page
+    }
     override suspend fun search(page: Int, keyword: String) = articles(page, null)
     override suspend fun topics() = WanResponse(
         0,

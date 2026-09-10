@@ -53,6 +53,10 @@ class HomeViewModelTest {
             article.displayMetadata("Unknown")
         )
         assertEquals(
+            ArticleDisplayMetadata(true, "Author", "Parent / Child", "Today"),
+            article.displayMetadata("Unknown", categorySeparator = " / ")
+        )
+        assertEquals(
             ArticleDisplayMetadata(false, "Unknown", "Unknown", "Unknown"),
             article.copy(
                 author = " ",
@@ -62,6 +66,67 @@ class HomeViewModelTest {
                 publishedAt = ""
             ).displayMetadata("Unknown")
         )
+    }
+
+    @Test
+    fun questionIndexLoopsAndSingleQuestionStaysStill() {
+        assertEquals(0, nextQuestionIndex(0, 0))
+        assertEquals(0, nextQuestionIndex(0, 1))
+        assertEquals(1, nextQuestionIndex(0, 5))
+        assertEquals(0, nextQuestionIndex(4, 5))
+    }
+
+    @Test
+    fun questionsLoadIndependentlyFromPendingArticles() = runTest(dispatcher) {
+        val repository = ControllableArticleRepository().apply {
+            questionsResult = DataResult.Success(listOf(article(10), article(11)))
+        }
+        val viewModel = HomeViewModel(repository)
+        runCurrent()
+
+        assertEquals(listOf(10L, 11L), viewModel.uiState.value.questions.map(Article::id))
+        assertFalse(viewModel.uiState.value.isQuestionLoading)
+        assertTrue(viewModel.uiState.value.isInitialLoading)
+
+        repository.takeRequest().complete(success(emptyList(), nextPage = null))
+        runCurrent()
+    }
+
+    @Test
+    fun questionFailureDoesNotReplaceSuccessfulArticles() = runTest(dispatcher) {
+        val repository = ControllableArticleRepository().apply {
+            questionsResult = DataResult.Failure(DataError.NETWORK)
+        }
+        val viewModel = HomeViewModel(repository)
+        runCurrent()
+        repository.takeRequest().complete(success(listOf(article(1)), nextPage = null))
+        runCurrent()
+
+        assertEquals(listOf(1L), viewModel.uiState.value.articles.map(Article::id))
+        assertTrue(viewModel.uiState.value.questions.isEmpty())
+        assertEquals(DataError.NETWORK, viewModel.uiState.value.questionError)
+    }
+
+    @Test
+    fun refreshMakesOlderQuestionResultStale() = runTest(dispatcher) {
+        val repository = ControllableArticleRepository().apply { holdQuestions = true }
+        val viewModel = HomeViewModel(repository)
+        runCurrent()
+        val oldArticleRequest = repository.takeRequest()
+        val oldQuestionRequest = repository.takeQuestionRequest()
+
+        viewModel.refresh()
+        runCurrent()
+        val newArticleRequest = repository.takeRequest()
+        val newQuestionRequest = repository.takeQuestionRequest()
+        newArticleRequest.complete(success(emptyList(), nextPage = null))
+        newQuestionRequest.complete(DataResult.Success(listOf(article(2))))
+        runCurrent()
+        oldArticleRequest.complete(success(emptyList(), nextPage = null))
+        oldQuestionRequest.complete(DataResult.Success(listOf(article(1))))
+        runCurrent()
+
+        assertEquals(listOf(2L), viewModel.uiState.value.questions.map(Article::id))
     }
 
     @Test
@@ -261,7 +326,10 @@ private fun success(items: List<Article>, nextPage: Int?) =
 
 private class ControllableArticleRepository : ArticleRepository {
     private val pending = ArrayDeque<Request>()
+    private val pendingQuestions = ArrayDeque<QuestionRequest>()
     private val pages = mutableListOf<Int>()
+    var questionsResult: DataResult<List<Article>> = DataResult.Success(emptyList())
+    var holdQuestions: Boolean = false
 
     val totalRequestCount: Int
         get() = pages.size
@@ -276,12 +344,30 @@ private class ControllableArticleRepository : ArticleRepository {
 
     fun requestCount(page: Int): Int = pages.count { it == page }
 
-    override suspend fun questions(): DataResult<List<Article>> = error("Not used")
+    override suspend fun questions(): DataResult<List<Article>> {
+        if (!holdQuestions) return questionsResult
+        return suspendCoroutine { continuation ->
+            pendingQuestions += QuestionRequest(continuation)
+        }
+    }
+
+    fun takeQuestionRequest(): QuestionRequest = pendingQuestions.removeFirst()
+
+    override suspend fun questionPage(page: Int): DataResult<PageResult<Article>> =
+        error("Not used")
 
     override suspend fun topics(): DataResult<List<Topic>> = error("Not used")
 
     override suspend fun search(page: Int, keyword: String): DataResult<PageResult<Article>> =
         error("Not used")
+}
+
+private data class QuestionRequest(
+    private val continuation: Continuation<DataResult<List<Article>>>
+) {
+    fun complete(result: DataResult<List<Article>>) {
+        continuation.resume(result)
+    }
 }
 
 private data class Request(

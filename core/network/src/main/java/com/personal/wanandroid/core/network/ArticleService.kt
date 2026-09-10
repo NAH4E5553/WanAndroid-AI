@@ -16,7 +16,7 @@ interface ArticleService {
     ): WanResponse<WanPageDto<ArticleDto>>
 
     @GET("wenda/list/{page}/json")
-    suspend fun questions(@Path("page") page: Int = 1): WanResponse<WanPageDto<ArticleDto>>
+    suspend fun questions(@Path("page") page: Int): WanResponse<WanPageDto<ArticleDto>>
 
     @GET("tree/json")
     suspend fun topics(): WanResponse<List<TopicDto>>
