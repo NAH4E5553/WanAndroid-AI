@@ -20,7 +20,7 @@ class ArticleRepositoryTest {
     fun nextPageUsesRequestCursorNotResponsePageOrListSize() = runTest {
         val fake = FakeSource()
         fake.page = WanResponse(0, data = WanPageDto(emptyList(), 1, false, 10))
-        val result = ArticleRepository(fake).articles(0) as DataResult.Success
+        val result = DefaultArticleRepository(fake).articles(0) as DataResult.Success
         assertEquals(1, result.value.nextPage)
         assertEquals(0, fake.requestPage)
     }
@@ -29,13 +29,13 @@ class ArticleRepositoryTest {
     fun terminalPageDoesNotAdvance() = runTest {
         val fake = FakeSource()
         fake.page = WanResponse(0, data = WanPageDto(emptyList(), 3, true, 0))
-        val result = ArticleRepository(fake).articles(2) as DataResult.Success
+        val result = DefaultArticleRepository(fake).articles(2) as DataResult.Success
         assertNull(result.value.nextPage)
     }
 
     @Test
     fun flattenRetainsParentAndDistinctSameNameChildren() = runTest {
-        val result = ArticleRepository(FakeSource()).topics() as DataResult.Success
+        val result = DefaultArticleRepository(FakeSource()).topics() as DataResult.Success
         assertEquals(listOf(10L, 11L, 12L), result.value.map { it.id })
         assertNull(result.value.first().parentId)
         assertEquals(10L, result.value[1].parentId)
@@ -48,7 +48,7 @@ class ArticleRepositoryTest {
             0,
             data = WanPageDto((1L..8L).map { article(it) }, 1, false, 8)
         )
-        val result = ArticleRepository(fake).questions() as DataResult.Success
+        val result = DefaultArticleRepository(fake).questions() as DataResult.Success
         assertEquals(5, result.value.size)
     }
 
@@ -58,14 +58,17 @@ class ArticleRepositoryTest {
         fake.page = WanResponse(-1001)
         assertEquals(
             DataResult.Failure(DataError.SESSION_EXPIRED),
-            ArticleRepository(fake).articles(0)
+            DefaultArticleRepository(fake).articles(0)
         )
         fake.page = WanResponse(-1)
-        assertEquals(DataResult.Failure(DataError.SERVICE), ArticleRepository(fake).articles(0))
+        assertEquals(
+            DataResult.Failure(DataError.SERVICE),
+            DefaultArticleRepository(fake).articles(0)
+        )
         fake.page = WanResponse(0)
         assertEquals(
             DataResult.Failure(DataError.INVALID_RESPONSE),
-            ArticleRepository(fake).articles(0)
+            DefaultArticleRepository(fake).articles(0)
         )
     }
 
@@ -73,7 +76,10 @@ class ArticleRepositoryTest {
     fun ioFailuresUseNetworkError() = runTest {
         val fake = FakeSource()
         fake.failure = IOException("synthetic network failure")
-        assertEquals(DataResult.Failure(DataError.NETWORK), ArticleRepository(fake).articles(0))
+        assertEquals(
+            DataResult.Failure(DataError.NETWORK),
+            DefaultArticleRepository(fake).articles(0)
+        )
     }
 
     @Test
@@ -82,7 +88,7 @@ class ArticleRepositoryTest {
         fake.failure = CancellationException("superseded")
         var cancelled = false
         try {
-            ArticleRepository(fake).articles(0)
+            DefaultArticleRepository(fake).articles(0)
         } catch (_: CancellationException) {
             cancelled = true
         }

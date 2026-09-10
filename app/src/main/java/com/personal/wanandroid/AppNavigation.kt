@@ -26,7 +26,7 @@ import com.personal.wanandroid.core.navigation.SearchRoute
 import com.personal.wanandroid.core.navigation.popIfCurrent
 import com.personal.wanandroid.feature.article.ArticleScreen
 import com.personal.wanandroid.feature.auth.LoginScreen
-import com.personal.wanandroid.feature.home.HomeScreen
+import com.personal.wanandroid.feature.home.HomeRoute
 import com.personal.wanandroid.feature.home.SearchScreen
 import com.personal.wanandroid.feature.profile.ProfileScreen
 import com.personal.wanandroid.feature.topics.TopicsScreen
@@ -45,6 +45,11 @@ fun AppNavigation() {
             entry<MainRoute> {
                 MainTabs(
                     onSearch = { if (stack.lastOrNull() == MainRoute) stack.add(SearchRoute) },
+                    onArticleClick = { url, title, articleId ->
+                        if (stack.lastOrNull() == MainRoute) {
+                            stack.add(ArticleRoute(url, title, articleId))
+                        }
+                    },
                     onLogin = { if (stack.lastOrNull() == MainRoute) stack.add(LoginRoute) }
                 )
             }
@@ -58,7 +63,11 @@ fun AppNavigation() {
 }
 
 @Composable
-private fun MainTabs(onSearch: () -> Unit, onLogin: () -> Unit) {
+private fun MainTabs(
+    onSearch: () -> Unit,
+    onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
+    onLogin: () -> Unit
+) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val stateHolder = rememberSaveableStateHolder()
     val labels = listOf(R.string.home, R.string.topics, R.string.profile)
@@ -78,8 +87,14 @@ private fun MainTabs(onSearch: () -> Unit, onLogin: () -> Unit) {
     ) { padding ->
         stateHolder.SaveableStateProvider(selected) {
             when (selected) {
-                0 -> HomeScreen(onSearch, Modifier.fillMaxSize().padding(padding))
+                0 -> HomeRoute(
+                    onSearch = onSearch,
+                    onArticleClick = onArticleClick,
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
+
                 1 -> TopicsScreen(Modifier.fillMaxSize().padding(padding))
+
                 2 -> ProfileScreen(onLogin, Modifier.fillMaxSize().padding(padding))
             }
         }
