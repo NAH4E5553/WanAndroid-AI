@@ -1,0 +1,9 @@
+<resources>
+    <string name="search_hint">搜索文章、技术与知识</string>
+    <string name="daily_question">每日一问</string>
+    <string name="latest_articles">最新博文</string>
+    <string name="question_pending">工程骨架阶段：问答接口已定义，5 条纵向循环展示待接入。</string>
+    <string name="article_pending">工程骨架阶段：文章接口与分页转换已建立，列表、刷新及加载更多待接入。</string>
+    <string name="search_pending">搜索入口已建立，输入及结果列表待接入。</string>
+    <string name="back">返回</string>
+</resources>

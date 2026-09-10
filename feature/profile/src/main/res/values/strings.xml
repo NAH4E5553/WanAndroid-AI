@@ -1,0 +1,11 @@
+<resources>
+    <string name="profile">个人中心</string>
+    <string name="account_pending">工程骨架阶段：会话与账号资料待接入。</string>
+    <string name="login">登录</string>
+    <string name="collections">我的收藏</string>
+    <string name="collections_pending">收藏与取消收藏功能待接入。</string>
+    <string name="history">阅读历史</string>
+    <string name="history_pending">独立历史表已定义，历史列表待接入。</string>
+    <string name="offline">离线内容</string>
+    <string name="offline_pending">正文缓存表已定义，缓存和离线阅读待实现。</string>
+</resources>

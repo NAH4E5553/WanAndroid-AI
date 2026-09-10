@@ -1,0 +1,5 @@
+<resources>
+    <string name="login">登录</string>
+    <string name="back">返回</string>
+    <string name="pending">工程骨架阶段：账号密码登录、Cookie 会话恢复和退出待实现。当前不收集凭据。</string>
+</resources>

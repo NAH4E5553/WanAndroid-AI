@@ -1,0 +1,4 @@
+<resources>
+    <string name="topics">专题</string>
+    <string name="pending">工程骨架阶段：分类平铺契约已建立。左侧分类、右侧文章和分类独立状态待接入。</string>
+</resources>

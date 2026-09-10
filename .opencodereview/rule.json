@@ -1,0 +1,44 @@
+{
+  "rules": [
+    {
+      "path": "**/*.kt",
+      "rule": "仅报告有本次 Diff、调用方或测试证据的实际缺陷，不报告风格偏好、推测或无行为收益的重构；明确标注的阶段占位功能不当作本次引入的缺陷。遵循 AGENTS.md 的 app -> feature -> core 方向；Feature 不依赖另一 Feature 的实现，UI 不访问 Repository/Service/DAO，DTO/Entity 不泄漏到 UI，Route 获取 ViewModel，Screen 参数化。Flow 使用 collectAsStateWithLifecycle，只读 StateFlow；相关状态原子更新。关注取消传播、请求快照、旧结果覆盖、分页成功后推进、搜索与分类切换竞争，分类按 ID 隔离且保留 parentId，问答轮播不重复请求。网络 errorCode 无默认成功值；非零失败、-1001 失效，禁止把异常伪装空列表。Cookie 按域/路径/有效期匹配且不注入第三方阅读网站；退出/换号使旧请求失效，收藏按账号和正确的文章/收藏记录 ID 同步。登录不自动重放写操作，收藏超时结果需校准而非盲目重试。历史和离线正文分别属于本机数据，退出不删除；缓存成功才可标记离线可用。WebView 不持有已结束页面、不绕过证书校验、不开放危险 bridge/文件访问；外部跳转需确认。缓存净化、容量/超时/并发限制及中断恢复有边界，Room 数据变更有匹配 Schema/Migration/事务验证。关注成功、失败、空、取消、并发和状态恢复测试；不要求尚未引入的 MMKV，也不禁止按需使用 MMKV，敏感存储仍需安全保护。",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/*.kts",
+      "rule": "检查统一版本目录和 Convention Plugin、模块依赖方向、implementation/api 边界以及生产/测试/调试依赖隔离。本项目只有 debug/release，不要求 dev/prod flavor；不要求和实际第三方依赖无关的 Jetifier 配置，也不因存在新版就建议批量升级。检查 build-logic、实际 Gradle task、verifyArchitecture 和 CI 是否一致，禁止为过检查删除规则、全局忽略警告或提交凭据。",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/AndroidManifest.xml",
+      "rule": "检查权限、exported、Intent 输入、明文网络、应用标识、备份和外部可调用组件。禁止写入 Secret/签名、忽略 TLS 错误或给第三方阅读域传递 API 会话。不同 Android 版本的数据提取与备份保护必须一致。",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/src/main/res/values*/**/*.xml",
+      "rule": "用户可见文字资源化；已有翻译时保持 key 和格式参数一致，不要求当前仅中文的项目新增英文。检查大字体、无障碍描述、格式参数、数量文案和深浅主题可读性，避免将纯审美偏好报告成缺陷。",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/src/main/res/xml/**/*.xml",
+      "rule": "检查备份、设备迁移、网络安全、文件共享规则，避免泄漏 Cookie、账号和敏感本地数据。检查不同 Android 版本的配套规则一致性。不绑定或强制任何存储库，数据库与键值存储按实际敏感内容保护。",
+      "merge_system_rule": true
+    },
+    {
+      "path": "core/database/schemas/**/*.json",
+      "rule": "核对 Entity/DAO、数据库版本和导出 Schema 一致；已有发布数据的结构变更需要 Migration 和升级测试，禁止破坏性清库兜底。首次建立尚未发布的 v1 Schema 不误报为缺少历史迁移。历史与离线正文分别存储，独立清理，列表查询不无条件携带全部正文。",
+      "merge_system_rule": true
+    },
+    {
+      "path": ".github/**",
+      "rule": "检查 CI 与新项目任务名、矩阵检查和报告路径一致；分类失败不得使必需检查静默成功，新增/未知文件应保守运行检查。OCR 默认关闭、只处理同仓库非 Draft PR，模型配置不得输出到日志或 Artifact；禁止用 pull_request_target 执行 PR 代码并暴露密钥。不用 OCR 成功代替确定性 CI 或人工判断；工作流和审查规则变更必须可审计。",
+      "merge_system_rule": true
+    },
+    {
+      "path": ".opencodereview/**",
+      "rule": "审查规则变更不应悄悄移除会话隔离、请求竞争、存储安全、模块边界和 WebView 风险检查。只报告证据充分的问题，审查结论不能自动修改代码或自行扩大业务范围。",
+      "merge_system_rule": true
+    }
+  ]
+}
