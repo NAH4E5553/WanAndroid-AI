@@ -21,7 +21,7 @@
 - 本轮没有重新执行 Release 或真机回归，因为未改变业务源码、构建变体和生产依赖。
 - 分类测试在新项目 build/ci-tests 中使用并清理虚构 Git fixture，未提交当前项目。
 
-## 尚未执行与启用前核查
+## 尚未执行与启用前核查（历史状态）
 
 - 未提交、推送、建立 PR、配置仓库 Secrets/Variables 或分支保护。
 - GitHub Runner 上的实际检查、OCR 真实模型调用、评论及增量范围尚未验证。
@@ -51,6 +51,16 @@
 - `./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug --no-daemon --stacktrace --console=plain --quiet` 退出码 0。
 - 原商城只读 Git 状态为空，未修改原项目；未执行提交、推送、PR 创建、远端配置或 DeepSeek 调用。
 
-用户已反馈自行配置仓库变量与凭据，未读取或核验具体值。本次没有更改启用开关。
-剩余验证：实际 GitHub Runner、DeepSeek API、真实评论/增量范围，待配置进入 main 并获得启用授权后验证。
+用户已反馈自行配置仓库变量与凭据；本地适配阶段未读取或核验具体值，也未更改启用开关。
+当时剩余验证为实际 GitHub Runner、真实模型 API、评论及增量范围，待配置进入 main 并获得启用授权后执行。
 限制：不保证进程被 SIGKILL/机器故障时能执行清理；不宣称模型结论具备完整敏感信息检测能力。详细边界见 .github/CI_GUIDE.md。
+
+## 后续：首次远端 PR 验证（2026-09-10）
+
+- 仅核对 OCR_LLM_URL、OCR_LLM_AUTH_TOKEN、OCR_LLM_MODEL、OCR_LLM_USE_ANTHROPIC、OCR_ENABLED 的名称存在；未读取或输出 Secret 值。
+- 用户确认代码上下文外发和费用边界后，将 OCR_ENABLED 设为 true。
+- PR #1 的 Android CI 六项必需检查全部成功；OpenCodeReview 真实调用成功。
+- OCR 发布正常汇总，结论为无发现且没有行级评论；工作流配置仍禁止上传原始结果 Artifact，并保持固定错误标签与临时结果清理约束。
+- 同一 PR 首次文档同步时，检查点正确选择上一提交到新提交的增量范围，模型命令退出码为 0，但评论发布以 `OCR_COMMENT_POST_FAILED` 保守失败；日志未打印原始输出，清理步骤成功。
+- 该同步只包含 Markdown 验证记录。工作流现排除 `.github/**/*.md` 单独触发，同时继续覆盖 `.github` 下的工作流、脚本、测试及其他非 Markdown 配置；配置回归测试锁定此边界。
+- OCR 仍未设为必需检查，且模型无发现不等于代码已被证明无缺陷；合并仍以确定性 CI、人工判断和分支保护为准。

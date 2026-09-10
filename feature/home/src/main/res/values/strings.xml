@@ -3,7 +3,14 @@
     <string name="daily_question">每日一问</string>
     <string name="latest_articles">最新博文</string>
     <string name="question_pending">工程骨架阶段：问答接口已定义，5 条纵向循环展示待接入。</string>
-    <string name="article_pending">工程骨架阶段：文章接口与分页转换已建立，列表、刷新及加载更多待接入。</string>
     <string name="search_pending">搜索入口已建立，输入及结果列表待接入。</string>
     <string name="back">返回</string>
+    <string name="author_unknown">未知作者</string>
+    <string name="articles_empty">暂时没有文章</string>
+    <string name="articles_end">已经到底了</string>
+    <string name="retry">重试</string>
+    <string name="error_network">网络连接失败，请检查网络后重试。</string>
+    <string name="error_service">服务暂时不可用，请稍后重试。</string>
+    <string name="error_session_expired">登录状态已失效，请重新登录。</string>
+    <string name="error_invalid_response">数据格式异常，请稍后重试。</string>
 </resources>

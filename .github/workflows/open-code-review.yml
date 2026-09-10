@@ -19,6 +19,7 @@ name: OpenCodeReview
       - 'AGENTS.md'
       - '**/AGENTS.md'
       - '.github/**'
+      - '!.github/**/*.md'
       - '.opencodereview/**'
       - 'tools/**'
 

@@ -3,10 +3,10 @@
 ## 当前状态和范围
 
 已在本地适配：Android CI、分类脚本、配置回归测试、OCR 工作流和审查规则。
-本配置只针对新项目，商城保持只读；首次提交包含工程骨架及 CI/OCR 配置，分支保护需另行配置。
-用户已反馈自行配置了 GitHub Secrets/Variables；本地没有读取或核验其值，也没有执行真实模型调用。
-本地 origin 已关联 https://github.com/NAH4E5553/WanAndroid-AI.git，但关联不等于已上传工程。
-GitHub 运行结果及 OCR 实际评论必须在首次 PR 后验证，不能由本地检查替代。
+本配置只针对新项目，商城保持只读；首次提交包含工程骨架及 CI/OCR 配置，首次远端 Android CI 六项通过，main 分支保护已配置。
+GitHub Secrets/Variables 的名称已核对齐全，未读取或输出 Secret 值。经用户确认代码上下文外发和费用边界后，仓库变量 OCR_ENABLED 已设为 true。
+origin 已关联并上传至 https://github.com/NAH4E5553/WanAndroid-AI.git。
+GitHub 首次 push 的 Android CI 六项检查已通过；PR #1 的六项必需检查及首次 OCR 真实模型调用也已通过，OCR 汇总为无发现、无行级评论。增量范围仍由后续 synchronize 运行持续核对。
 
 ## Android CI
 
@@ -31,7 +31,7 @@ CI Configuration 失败时，其余五项检查使用 always() 和显式状态�
 
 JDK 17；保留 setup-gradle 缓存，PR 只读缓存，main 可写。checkout 不持久化 Git 凭据。
 测试、Lint 报告以及 Debug APK 可作为 Artifact 保留 7 天；这些不是正式签名发布产物。
-首次跑通后，按 GitHub 实际显示名称把上述六项配置为 main 的必需检查；OCR 不设为必需检查。
+main 已按 GitHub 实际显示名称将上述六项配置为必需检查，并要求 PR、分支同步和讨论解决；审批人数为 0，管理员不可绕过，禁止强推和删除。OCR 不设为必需检查。
 目前不启用 merge queue；如果以后启用，需要补充 merge_group 事件和分类策略再验证。
 
 ## 本地验证
@@ -61,6 +61,7 @@ prepare_ocr_action.py 只下载固定提交的两个公开源码文件并校验 
 
 名称为 OpenCodeReview，仅在目标 main 的同仓库、非 Draft PR 创建/更新/重开/转 Ready 时考虑运行。
 必须显式设置 OCR_ENABLED=true；变量未设置或 false 时不调用模型、不花费模型额度。
+源码、Gradle、Manifest/资源、Schema、审查规则及 `.github` 非 Markdown 配置会触发 OCR；普通说明文档和 `.github/**/*.md` 不单独触发，避免无有效审查对象时产生无意义的评论发布失败。若同一提交还包含可审查代码或配置，仍正常触发。
 不使用 pull_request_target，不接收评论命令，不审查外部 Fork，不添加历史审查工作流，不在 main push 上触发。
 工作流默认 contents:read；只有 review job 获得 pull-requests:write，用于审查评论。
 保持上游 Action 来源提交 8d023aafcec05f8ba5628fca3eaba88078e5d201 和 CLI 1.11.1，不使用 latest。
@@ -93,7 +94,7 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 
 日志抑制的代价是故障详情更少；本地验证不能替代真实 PR 的首次接入验证。
 
-## 新仓库启用（本轮不远程操作）
+## 新仓库启用（当前已启用）
 
 在新仓库 Settings → Secrets and variables → Actions 单独设置：
 
@@ -103,7 +104,7 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 | Secret | OCR_LLM_AUTH_TOKEN | 新项目模型凭据 |
 | Variable | OCR_LLM_MODEL | 模型名称 |
 | Variable | OCR_LLM_USE_ANTHROPIC | Anthropic 协议 true；OpenAI 兼容协议 false |
-| Variable | OCR_ENABLED | 保持 false；适配器进入 main 且确认外发/费用边界后再设 true |
+| Variable | OCR_ENABLED | 当前为 true；适配器已进入 main，且已确认外发/费用边界 |
 
 优先使用新项目独立凭据，不从商城读取/复制 Secret；不要在聊天、Git、PR 或日志贴凭据。
 启用前确认允许把审查所需 Diff/代码上下文发送给所配置的模型服务，设置额度并观察耗时。
@@ -121,10 +122,11 @@ OCR 找到问题时不一定导致检查失败，工具成功不代表代码无�
 
 ## 后续交付顺序
 
-1. 本地适配和验证（当前任务）。
-2. 获得提交/推送授权后检查远端，确定初始化或 PR 基线。
-3. 先让安全适配器和规则进入 main，再在已配置模型凭据且确认外发/费用后启用 OCR。
-4. 跑通真实 PR 的 CI/OCR，再配置分支保护。
+1. 本地适配和验证（已完成）。
+2. 工程骨架及安全适配器进入 main，首次 Android CI 六项通过（已完成）。
+3. main 分支保护配置并回查（已完成）。
+4. 通过真实功能 PR 验证 PR 必需检查（PR #1 已完成）。
+5. 再次确认代码外发和费用边界后启用 OCR，并单独验证真实评论链路（PR #1 首次完整审查已完成；后续继续验证增量和失败路径）。
 
 参考：
 
