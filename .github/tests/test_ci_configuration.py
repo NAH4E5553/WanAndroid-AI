@@ -127,6 +127,7 @@ class WorkflowContracts(unittest.TestCase):
             "core/database/schemas/**", "AGENTS.md", ".github/**", ".opencodereview/**",
         ):
             self.assertIn(required, paths)
+        self.assertIn("!.github/**/*.md", paths)
 
     def test_ocr_model_preflight_accepts_complete_configuration(self):
         result = self.run_model_preflight({})

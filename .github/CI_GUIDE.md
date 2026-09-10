@@ -61,6 +61,7 @@ prepare_ocr_action.py 只下载固定提交的两个公开源码文件并校验 
 
 名称为 OpenCodeReview，仅在目标 main 的同仓库、非 Draft PR 创建/更新/重开/转 Ready 时考虑运行。
 必须显式设置 OCR_ENABLED=true；变量未设置或 false 时不调用模型、不花费模型额度。
+源码、Gradle、Manifest/资源、Schema、审查规则及 `.github` 非 Markdown 配置会触发 OCR；普通说明文档和 `.github/**/*.md` 不单独触发，避免无有效审查对象时产生无意义的评论发布失败。若同一提交还包含可审查代码或配置，仍正常触发。
 不使用 pull_request_target，不接收评论命令，不审查外部 Fork，不添加历史审查工作流，不在 main push 上触发。
 工作流默认 contents:read；只有 review job 获得 pull-requests:write，用于审查评论。
 保持上游 Action 来源提交 8d023aafcec05f8ba5628fca3eaba88078e5d201 和 CLI 1.11.1，不使用 latest。
