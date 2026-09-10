@@ -64,3 +64,13 @@
 - 同一 PR 首次文档同步时，检查点正确选择上一提交到新提交的增量范围，模型命令退出码为 0，但评论发布以 `OCR_COMMENT_POST_FAILED` 保守失败；日志未打印原始输出，清理步骤成功。
 - 该同步只包含 Markdown 验证记录。工作流现排除 `.github/**/*.md` 单独触发，同时继续覆盖 `.github` 下的工作流、脚本、测试及其他非 Markdown 配置；配置回归测试锁定此边界。
 - OCR 仍未设为必需检查，且模型无发现不等于代码已被证明无缺陷；合并仍以确定性 CI、人工判断和分支保护为准。
+
+## 后续：固定运行时竞态修复（2026-09-11）
+
+- PR #3 的 OpenCodeReview 在安装和配置成功后，`ocr review` 以退出码 127 结束，未产生审查评论；六项必需 Android CI 均成功，OCR 仍为非必需辅助检查。
+- 对照固定版本源码、npm 1.11.1 启动器及上游 issue #703 / PR #1204，确认根因是 `ocr version` 启动后台自动更新；注册表存在较新版本时，异步 `npm i -g` 会在后续步骤前短暂移除全局启动器或 JavaScript 包目录。
+- 生成适配器时为 Install OpenCodeReview、Configure OCR、Run OpenCodeReview 三个调用步骤设置 `OCR_NO_UPDATE=1`。这只稳定 Action 自己安装的运行时，不改变开发者直接使用 OCR CLI 时的默认更新行为。
+- 新增回归测试扫描所有实际调用 `ocr` 的生成步骤；调用集合变化或任一步未禁用自升级都会失败。
+- 本地配置回归测试 38 项通过；生成适配器在线下载、固定哈希校验和 Python/Bash/JavaScript 语法检查通过；actionlint 1.7.7 检查两份工作流通过。
+- `./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug` 成功，641 个任务无失败。由于 OCR 始终从 PR 的 `base.sha` 加载受信适配器，修复 PR 自身仍会使用旧版本；真实 GitHub Runner 和模型评论链路必须在修复合并后的下一条可审查 PR 上验证。
+- PR #4 的旧适配器本次未撞上竞态并完成审查，指出调用扫描正则会遗漏 `./bin/ocr` 等路径形式。该意见已接受：扩大命令前缀识别范围，并增加直接、相对路径、变量路径和虚拟环境路径样例。
