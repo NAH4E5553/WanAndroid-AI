@@ -39,6 +39,42 @@ origin 指向 https://github.com/NAH4E5553/WanAndroid-AI.git；初始版本包�
 OCR 工作流、规则与日志安全适配器已就绪；经用户确认代码上下文外发和费用边界后，仓库已启用 OCR，并在 PR #1 完成首次真实模型审查，结果为无发现。OCR 仍是辅助检查，不是必需合并门槛。
 本工程只保留 debug/release；不使用来源商城的 devDebug/prodRelease 任务。
 
+## Feature 代码分组
+
+后续开发须遵守 [AGENTS.md 的代码分组与文件组织规则](AGENTS.md#代码分组与文件组织)，下文为现有结构说明。
+
+各 feature 在自己的 Kotlin 包下按职责组织，目录与 package 保持一致：
+
+| 目录 | 职责 |
+|---|---|
+| `view` | 页面及对应 Route，保留页面私有的小组件 |
+| `viewmodel` | 页面状态管理与事件处理，一个主要 ViewModel 对应一个文件 |
+| `navigation` | Feature Graph 和页面路由注册 |
+| `state` | 页面 UiState、页面事件及相关状态类型 |
+| `component` | 模块内部独立 UI 组件，如阅读器 WebView |
+| `policy` | 模块专属策略，如阅读链接的安全校验 |
+
+仅在有对应代码时创建目录；`test`、`androidTest` 的包路径与被测代码职责对应。
+跨模块公共 UI 继续放 `core:ui`，业务契约继续放 `core:model`，不因分组搬入 feature。
+
+## Core 代码分组
+
+参考 CoolMallKotlin 按职责组织，保留本项目的模块依赖和调用链：
+
+| 模块 | 内部分组 |
+|---|---|
+| `core:data` | `repository` 仓储接口及实现、`datasource` 本机存储、`mapper` 响应转换、`model` 主题偏好存储契约、`di` 注入绑定 |
+| `core:network` | `service` Retrofit 接口、`datasource` 网络数据源、`dto` 网络传输模型、`di` 网络配置及绑定 |
+| `core:database` | `dao` 数据访问、`entity` 表实体、`model` 查询投影、`di` 数据库注入；数据库入口留在根包 |
+| `core:common` | `base/viewmodel` 列表基类、`base/state` 分页状态、`paging` 分页控制器 |
+| `core:designsystem` | `theme` 颜色、形状、间距及主题入口 |
+| `core:ui` | `component` 下按 `card`、`list`、`network`、`placeholder`、`scaffold` 组织公共组件 |
+| `core:model` | Article、Topic、PageResult、SearchHistory 按类型独立文件，保留业务契约根包 |
+| `core:navigation`、`core:result` | 职责集中且文件较少，保留根包，不创建空分组 |
+
+测试包按被测职责同步分组。导航序列化类型的包名、数据库类名、Room 表结构、DataStore 文件名及键值保持不变。
+网络 DTO 仍属于 `core:network`，Room 实体仍属于 `core:database`，不复制商城的请求/响应模型到业务契约模块。
+
 ## 文档
 
 `docs/` 为本地开发与验收资料，已从 Git 跟踪中移除；下列 docs 链接仅在本机资料存在时可用。

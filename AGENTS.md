@@ -24,6 +24,49 @@
 - core:designsystem 不依赖业务、网络、导航或数据库。core:ui 只提供跨页面视觉组件。
 - 不为保持商城目录一致而引入空模块、无用 SDK 或无约束公共工具。
 
+## 代码分组与文件组织
+
+新增和修改代码必须遵守以下约定，以实际职责决定归属，文件名后缀只作辅助判断。CoolMallKotlin 仅作组织方式参考，本项目的架构边界优先。
+
+### Feature
+
+| 包目录 | 职责与约定 |
+|---|---|
+| `view` | Screen 和对应 Route；Route 获取 ViewModel 并收集状态，Screen 负责渲染和事件回调 |
+| `viewmodel` | 页面状态管理与事件处理；每个主要 ViewModel 独立文件 |
+| `navigation` | Feature Graph 和页面路由注册，不承载页面业务逻辑 |
+| `state` | UiState、页面事件及紧密相关的状态类型，不执行请求或操作 UI |
+| `component` | Feature 内可独立使用或具有独立生命周期的 UI 组件 |
+| `policy` | Feature 专属的判断、校验与安全策略 |
+
+- Route 默认与对应 Screen 同文件；仅服务当前页面的短小私有组件可留在 Screen 文件，不要求每个 Composable 单独拆文件。
+- 跨 Feature 的公共视觉组件放 `core:ui`；业务契约放 `core:model`，不得通过复制代码或 Feature 互相依赖实现复用。
+
+### Core
+
+| 模块 | 包目录与职责 |
+|---|---|
+| `core:data` | `repository` 仓储接口及实现；`datasource` 本机存储；`mapper` 响应与模型转换；`model` 存储专属类型；`di` 注入绑定 |
+| `core:network` | `service` Retrofit 接口；`datasource` 网络数据源；`dto` 网络传输模型；`di` 网络配置及绑定 |
+| `core:database` | `dao` 数据访问；`entity` Room 表实体；`model` 查询投影；`di` 数据库注入；数据库入口类保留根包 |
+| `core:common` | `base/viewmodel` 列表基类；`base/state` 分页状态；`paging` 分页控制器 |
+| `core:designsystem` | `theme` 颜色、形状、间距及主题入口 |
+| `core:ui` | `component` 下按组件职责分组，如 `card`、`list`、`network`、`placeholder`、`scaffold` |
+| `core:model` | 业务契约按类型独立文件；规模较小时保留根包，增长后按业务领域分组 |
+| `core:navigation`、`core:result` | 职责集中且文件较少时保留根包，不为对齐其他模块强行增加层级 |
+
+- `core:data/model` 只承载存储专属契约（如现有主题偏好），不能成为通用业务模型目录；网络 DTO、Room 实体和业务契约仍分别归属各自模块。
+- DTO、Entity、DAO 等主要类型各自独立文件；仓储接口与对应默认实现、状态及紧密相关的小类型可以同文件，不机械拆分所有声明。
+
+### 执行与验收
+
+- 目录与 Kotlin `package` 一致，包目录采用小写；`test`、`androidTest` 按被测代码职责同步分组。
+- 只在有实际代码时创建分组；优先使用已有明确职责的目录，不新建无边界的 `utils`、`manager` 或 `helper` 杂物包。
+- 包迁移同步检查调用方、测试、完整类名引用、Manifest 和混淆配置；不得为解决引用问题扩大类型可见性或增加不必要的模块依赖。
+- 纯组织重构保持行为、导航序列化名称、Room Schema 和 DataStore 文件名/键值兼容；涉及持久化标识变化时，必须另行提供兼容或迁移方案及验证。
+- 代码变更运行本文件规定的完整验证入口；UI/导航相关迁移还需运行受影响的现有 UI 回归。纯文档变更检查差异和链接即可。
+- 新增职责分组或采用例外时，在变更说明中解释原因，并同步更新本节和 README 的分组说明；不要让实现与规则长期不一致。
+
 ## 状态与并发
 
 - Route 获取 ViewModel、使用 collectAsStateWithLifecycle；Screen 通过参数和事件渲染，不访问 Repository。

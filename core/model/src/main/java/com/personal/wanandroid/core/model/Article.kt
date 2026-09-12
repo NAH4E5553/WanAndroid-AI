@@ -12,8 +12,3 @@ data class Article(
     val publishedAt: String,
     val collected: Boolean
 )
-
-data class Topic(val id: Long, val name: String, val parentId: Long? = null)
-
-/** nextPage is a request cursor, not the response curPage display number. */
-data class PageResult<T>(val items: List<T>, val nextPage: Int?)
