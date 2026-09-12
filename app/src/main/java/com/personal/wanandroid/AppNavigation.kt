@@ -28,14 +28,14 @@ import com.personal.wanandroid.core.navigation.MainRoute
 import com.personal.wanandroid.core.navigation.NavigationDispatcher
 import com.personal.wanandroid.core.navigation.NavigationHostToken
 import com.personal.wanandroid.core.navigation.NavigationSource
-import com.personal.wanandroid.core.ui.AppScaffold
-import com.personal.wanandroid.feature.article.articleGraph
-import com.personal.wanandroid.feature.auth.authGraph
-import com.personal.wanandroid.feature.home.HomeRoute
-import com.personal.wanandroid.feature.home.homeGraph
-import com.personal.wanandroid.feature.profile.ProfileRoute
-import com.personal.wanandroid.feature.profile.profileGraph
-import com.personal.wanandroid.feature.topics.TopicsRoute
+import com.personal.wanandroid.core.ui.component.scaffold.AppScaffold
+import com.personal.wanandroid.feature.article.navigation.articleGraph
+import com.personal.wanandroid.feature.auth.navigation.authGraph
+import com.personal.wanandroid.feature.home.navigation.homeGraph
+import com.personal.wanandroid.feature.home.view.HomeRoute
+import com.personal.wanandroid.feature.profile.navigation.profileGraph
+import com.personal.wanandroid.feature.profile.view.ProfileRoute
+import com.personal.wanandroid.feature.topics.view.TopicsRoute
 
 @Composable
 fun AppNavigation(dispatcher: NavigationDispatcher) {

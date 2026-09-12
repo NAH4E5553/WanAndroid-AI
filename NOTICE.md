@@ -13,19 +13,19 @@ OCR 日志适配基于 Alibaba open-code-review，固定来源提交为
 上游使用 Apache-2.0，完整许可见 .github/licenses/open-code-review-LICENSE。
 
 2026-09-12 基线迁移扩大了适配范围（来源版本不变，MIT/Joker.X）：
-- 来源 Result/ResultHandler 职责 → core/result/DataResult 与 core/data/WanResponseMapper；协议/展示职责分离。
-- 来源 BaseNetWorkListViewModel → core/common/PagingController、PagedUiState、BaseNetworkListViewModel；改为服务端游标、原子状态和组合适配。
-- 来源 BaseNetWorkListView、RefreshContent、PageLoading/EmptyNetwork/EmptyData/LoadMore → core/ui/NetworkListPage、NetworkStates；保留 WanAndroid 视觉及 Material 手势。
-- 来源 AppScaffold、AppListItem → core/ui 同名组件；裁剪未使用参数、明确 padding、可选点击语义。
-- 来源 Color/Shape/Size/Theme 组织方式 → WanColor/WanShape/WanSpacing/WanTheme；保留 WanAndroid 四套完整浅深色值和 DataStore。
+- 来源 Result/ResultHandler 职责 → core/result/DataResult 与 core/data/mapper/WanResponseMapper；协议/展示职责分离。
+- 来源 BaseNetWorkListViewModel → core/common/paging/PagingController、base/state/PagedUiState、base/viewmodel/BaseNetworkListViewModel；改为服务端游标、原子状态和组合适配。
+- 来源 BaseNetWorkListView、RefreshContent、PageLoading/EmptyNetwork/EmptyData/LoadMore → core/ui/component/network/NetworkListPage、NetworkStates；保留 WanAndroid 视觉及 Material 手势。
+- 来源 AppScaffold、AppListItem → core/ui/component/scaffold/AppScaffold、component/list/AppListItem；裁剪未使用参数、明确 padding、可选点击语义。
+- 来源 Color/Shape/Size/Theme 组织方式 → core/designsystem/theme 下的 WanColor/WanShape/WanSpacing/WanTheme；保留 WanAndroid 四套完整浅深色值和 DataStore。
 - 来源 NavigationService、AppNavigator、Feature Graph → NavigationDispatcher、带 entry ID 的 AppRoute、各 Feature Graph；删除全局服务与点击缓存，增加 Host token 校验。
 这些是基于来源职责与代码进行的适配/优化，不宣称文件逐字一致。完整原始路径、实际调用和差异见 docs/基线差异清单.md。原 MIT 版权和许可继续保留于 LICENSE。
 
 2026-09-12 在线阅读沿用同一来源版本：
-- feature/common 的 util/WebUrlPolicy.kt、util/WebViewSecurity.kt → feature/article/ReaderUrlPolicy.kt、ReaderWebView.kt；适配多来源 HTTPS 文章、外部跳转确认及 WebView 生命周期。
-- feature/common 的 view/WebScreen.kt、viewmodel/WebViewModel.kt → feature/article/ArticleScreen.kt、ArticleViewModel.kt；复用页面分层、进度与释放职责，状态收敛为单一快照并增加过期回调、超时及安全 URL 恢复保护。
+- feature/common 的 util/WebUrlPolicy.kt、util/WebViewSecurity.kt → feature/article/policy/ReaderUrlPolicy.kt、component/ReaderWebView.kt；适配多来源 HTTPS 文章、外部跳转确认及 WebView 生命周期。
+- feature/common 的 view/WebScreen.kt、viewmodel/WebViewModel.kt → feature/article/view/ArticleScreen.kt、viewmodel/ArticleViewModel.kt；复用页面分层、进度与释放职责，状态收敛为单一快照并增加过期回调、超时及安全 URL 恢复保护。
 不复制商城原生桥、业务凭据或 SDK。
 
 2026-09-12 搜索增量继续扩展此前适配的 PagingController/BaseNetworkListViewModel：增加不可变请求上下文、原子上下文与页面快照及 reset 隔离；固定首页/问答传 Unit，搜索使用关键词。搜索页面复用本项目已有文章卡片、公共列表与导航，不另引入商城业务代码。
 
-2026-09-12 专题左栏增量参考 CoolMallKotlin 当前只读版本 0e6a9aa4a10d4c8139f1eb0455db3a826c99657e（MIT/Joker.X）：feature/main/view/CategoryScreen.kt 的左侧选中样式、菜单定位及 drawLeftCategoryGroups/drawRightRoundedRect 路径绘制适配到 feature/topics/TopicsScreen.kt。使用 WanAndroid 分类 ID、动态行高和主题颜色；不迁入右侧滚动反向选中、自动切换分类、商品网格、图片或商品导航。
+2026-09-12 专题左栏增量参考 CoolMallKotlin 当前只读版本 0e6a9aa4a10d4c8139f1eb0455db3a826c99657e（MIT/Joker.X）：feature/main/view/CategoryScreen.kt 的左侧选中样式、菜单定位及 drawLeftCategoryGroups/drawRightRoundedRect 路径绘制适配到 feature/topics/view/TopicsScreen.kt。使用 WanAndroid 分类 ID、动态行高和主题颜色；不迁入右侧滚动反向选中、自动切换分类、商品网格、图片或商品导航。

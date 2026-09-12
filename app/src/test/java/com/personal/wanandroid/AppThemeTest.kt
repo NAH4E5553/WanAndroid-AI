@@ -1,8 +1,8 @@
 package com.personal.wanandroid
 
-import com.personal.wanandroid.core.data.ThemeModePreference
-import com.personal.wanandroid.core.data.ThemePalettePreference
-import com.personal.wanandroid.core.designsystem.WanPalette
+import com.personal.wanandroid.core.data.model.ThemeModePreference
+import com.personal.wanandroid.core.data.model.ThemePalettePreference
+import com.personal.wanandroid.core.designsystem.theme.WanPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

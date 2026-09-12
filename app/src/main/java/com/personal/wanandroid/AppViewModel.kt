@@ -2,11 +2,11 @@ package com.personal.wanandroid
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personal.wanandroid.core.data.ThemeModePreference
-import com.personal.wanandroid.core.data.ThemePalettePreference
-import com.personal.wanandroid.core.data.ThemePreferencesRepository
-import com.personal.wanandroid.core.data.ThemePreferencesState
-import com.personal.wanandroid.core.designsystem.WanPalette
+import com.personal.wanandroid.core.data.model.ThemeModePreference
+import com.personal.wanandroid.core.data.model.ThemePalettePreference
+import com.personal.wanandroid.core.data.model.ThemePreferencesState
+import com.personal.wanandroid.core.data.repository.ThemePreferencesRepository
+import com.personal.wanandroid.core.designsystem.theme.WanPalette
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
