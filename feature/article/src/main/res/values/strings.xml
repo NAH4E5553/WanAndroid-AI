@@ -1,4 +1,19 @@
 <resources>
     <string name="back">返回</string>
-    <string name="pending">工程骨架阶段：安全阅读容器与离线正文展示待实现。</string>
+    <string name="reader_title">文章阅读</string>
+    <string name="reader_refresh">刷新</string>
+    <string name="reader_external">外部打开</string>
+    <string name="reader_external_title">在其他应用中打开？</string>
+    <string name="reader_external_message">将交由其他应用处理此链接：\n%1$s</string>
+    <string name="reader_confirm">打开</string>
+    <string name="reader_cancel">取消</string>
+    <string name="reader_unsupported_url">此链接无法在应用内安全打开。</string>
+    <string name="reader_network_error">网页加载失败，请检查网络后重试。</string>
+    <string name="reader_http_error">网页暂时不可用，请稍后重试。</string>
+    <string name="reader_tls_error">网页安全证书验证失败，已停止加载。</string>
+    <string name="reader_timeout">网页加载超时，请重试。</string>
+    <string name="reader_renderer_error">阅读组件已停止，请重试以重新打开。</string>
+    <string name="reader_unsafe">已停止加载不安全的网页。</string>
+    <string name="reader_blocked_link">已阻止不支持的链接、自动外部跳转或下载。</string>
+    <string name="reader_external_unavailable">没有可用的应用打开此链接。</string>
 </resources>

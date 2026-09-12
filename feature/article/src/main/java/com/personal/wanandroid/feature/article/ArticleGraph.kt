@@ -13,6 +13,6 @@ fun EntryProviderScope<NavKey>.articleGraph(
 ) {
     entry<RouteKey>(clazzContentKey = { it.entryId }) { route ->
         val source = NavigationSource(host, route.entryId)
-        ArticleScreen(title = route.title, onBack = { dispatcher.back(source) })
+        ArticleRoute(article = route, onBack = { dispatcher.back(source) })
     }
 }

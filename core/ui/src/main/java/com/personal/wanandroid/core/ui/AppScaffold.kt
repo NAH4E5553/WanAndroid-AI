@@ -10,12 +10,14 @@ import androidx.compose.ui.Modifier
 @Composable
 fun AppScaffold(
     modifier: Modifier = Modifier,
+    topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
         modifier = modifier,
+        topBar = topBar,
         bottomBar = bottomBar,
         snackbarHost = snackbarHost,
         containerColor = MaterialTheme.colorScheme.background,
