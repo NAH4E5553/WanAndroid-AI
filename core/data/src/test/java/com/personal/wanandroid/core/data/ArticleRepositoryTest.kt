@@ -16,6 +16,33 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ArticleRepositoryTest {
+    @Test fun searchPreservesKeywordAndUsesRequestCursorAndOverFlag() = runTest {
+        val fake = FakeSource()
+        fake.page = WanResponse(0, data = WanPageDto(listOf(article(7)), 99, false, 1))
+        val result = DefaultArticleRepository(fake).search(0, "Kotlin + Flow") as DataResult.Success
+        assertEquals("Kotlin + Flow", fake.searchKeyword)
+        assertEquals(0, fake.requestPage)
+        assertEquals(1, result.value.nextPage)
+        assertEquals(7L, result.value.items.single().id)
+        fake.page = WanResponse(0, data = WanPageDto(emptyList(), 99, true, 0))
+        val last = DefaultArticleRepository(fake).search(1, "Kotlin + Flow") as DataResult.Success
+        assertNull(last.value.nextPage)
+    }
+
+    @Test fun searchBusinessFailureAndMissingBodyAreNotEmptyResults() = runTest {
+        val fake = FakeSource()
+        fake.page = WanResponse(-1)
+        assertEquals(
+            DataResult.Failure(DataError.SERVICE),
+            DefaultArticleRepository(fake).search(0, "fixture")
+        )
+        fake.page = WanResponse(0)
+        assertEquals(
+            DataResult.Failure(DataError.INVALID_RESPONSE),
+            DefaultArticleRepository(fake).search(0, "fixture")
+        )
+    }
+
     @Test
     fun nextPageUsesRequestCursorNotResponsePageOrListSize() = runTest {
         val fake = FakeSource()
@@ -167,6 +194,7 @@ private class FakeSource : ArticleNetworkDataSource {
         0,
         data = WanPageDto(listOf(article(1)), 1, true, 1)
     )
+    var searchKeyword: String? = null
     var requestPage: Int? = null
     var questionRequestPage: Int? = null
     var failure: Exception? = null
@@ -183,7 +211,10 @@ private class FakeSource : ArticleNetworkDataSource {
         questionRequestPage = page
         return this.page
     }
-    override suspend fun search(page: Int, keyword: String) = articles(page, null)
+    override suspend fun search(page: Int, keyword: String): WanResponse<WanPageDto<ArticleDto>> {
+        searchKeyword = keyword
+        return articles(page, null)
+    }
     override suspend fun topics() = WanResponse(
         0,
         data = listOf(TopicDto(10, "Parent", listOf(TopicDto(11, "Same"), TopicDto(12, "Same"))))

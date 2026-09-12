@@ -52,7 +52,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.result.DataError
-import com.personal.wanandroid.core.ui.FeaturePlaceholder
 import com.personal.wanandroid.core.ui.MessageCard
 import com.personal.wanandroid.core.ui.NetworkListPage
 import com.personal.wanandroid.core.ui.R as CoreUiR
@@ -345,7 +344,7 @@ internal fun nextQuestionIndex(currentIndex: Int, questionCount: Int): Int =
 private const val QUESTION_INTERVAL_MILLIS = 4_000L
 
 @Composable
-private fun ArticleCard(article: Article, onClick: () -> Unit) {
+internal fun ArticleCard(article: Article, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().padding(
@@ -409,15 +408,4 @@ internal fun Article.displayMetadata(
             .ifBlank { unknown },
         publishedAt = publishedAt.ifBlank { unknown }
     )
-}
-
-@Composable
-fun SearchScreen(onBack: () -> Unit) {
-    Column(Modifier.safeDrawingPadding()) {
-        OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        FeaturePlaceholder(
-            stringResource(R.string.search_hint),
-            stringResource(R.string.search_pending)
-        )
-    }
 }

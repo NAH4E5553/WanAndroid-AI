@@ -43,5 +43,10 @@ object NetworkModule {
 @InstallIn(SingletonComponent::class)
 abstract class DataSourceModule {
     @Binds
+    abstract fun searchHotKeys(
+        implementation: RetrofitSearchHotKeyDataSource
+    ): SearchHotKeyDataSource
+
+    @Binds
     abstract fun articles(implementation: RetrofitArticleDataSource): ArticleNetworkDataSource
 }

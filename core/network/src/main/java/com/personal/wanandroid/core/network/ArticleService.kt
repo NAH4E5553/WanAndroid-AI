@@ -8,6 +8,9 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ArticleService {
+    @GET("hotkey/json")
+    suspend fun hotKeys(): WanResponse<List<SearchHotKeyDto>>
+
     @GET("article/list/{page}/json")
     suspend fun articles(
         @Path("page") page: Int,
