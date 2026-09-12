@@ -16,7 +16,14 @@ dependencyResolutionManagement {
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "WanAndroid-AI"
 include(":app")
-include(":core:model", ":core:network", ":core:data", ":core:database")
+include(
+    ":core:common",
+    ":core:result",
+    ":core:model",
+    ":core:network",
+    ":core:data",
+    ":core:database"
+)
 include(":core:designsystem", ":core:ui", ":core:navigation")
 include(":feature:home", ":feature:topics", ":feature:profile")
 include(":feature:article", ":feature:auth")

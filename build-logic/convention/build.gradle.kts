@@ -10,6 +10,10 @@ dependencies {
 }
 gradlePlugin {
     plugins {
+        register("wanKotlinLibrary") {
+            id = "wan.kotlin.library"
+            implementationClass = "WanKotlinLibraryPlugin"
+        }
         register("wanApplication") {
             id = "wan.android.application"
             implementationClass = "WanApplicationPlugin"

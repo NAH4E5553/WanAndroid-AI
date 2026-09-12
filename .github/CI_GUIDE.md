@@ -16,7 +16,7 @@ GitHub 首次 push 的 Android CI 六项检查已通过；PR #1 的六项必需�
 |---|---|
 | CI Configuration | YAML/工作流契约测试、分类回归测试、actionlint、Bash 语法、变更分类 |
 | Build | :app:assembleDebug |
-| Unit Tests | testDebugUnitTest |
+| Unit Tests | testAll |
 | Android Lint | lintDebug |
 | Code Format | spotlessCheck |
 | Architecture | verifyArchitecture |
@@ -46,7 +46,7 @@ build/ci-tools/venv/bin/python .github/scripts/prepare_ocr_action.py
 build/ci-tools/venv/bin/python -m unittest discover -s .github/tests -v
 build/ci-tools/actionlint -shellcheck= -pyflakes= .github/workflows/*.yml
 bash -n .github/scripts/should-run-android-ci.sh
-./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug --no-daemon --stacktrace
+./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testAll lintDebug --no-daemon --stacktrace
 ```
 
 PyYAML 固定为 6.0.2，用于测试安全解析及重复键检测。actionlint 固定 1.7.7，下载包以代码中记录的官方 SHA-256 校验后，只提取名为 actionlint 的普通文件。

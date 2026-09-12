@@ -1,12 +1,12 @@
 package com.personal.wanandroid.core.data
 
-import com.personal.wanandroid.core.model.DataError
-import com.personal.wanandroid.core.model.DataResult
 import com.personal.wanandroid.core.network.ArticleDto
 import com.personal.wanandroid.core.network.ArticleNetworkDataSource
 import com.personal.wanandroid.core.network.TopicDto
 import com.personal.wanandroid.core.network.WanPageDto
 import com.personal.wanandroid.core.network.WanResponse
+import com.personal.wanandroid.core.result.DataError
+import com.personal.wanandroid.core.result.DataResult
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -132,6 +132,16 @@ class ArticleRepositoryTest {
         fake.failure = IOException("synthetic network failure")
         assertEquals(
             DataResult.Failure(DataError.NETWORK),
+            DefaultArticleRepository(fake).articles(0)
+        )
+    }
+
+    @Test
+    fun malformedResponseUsesStableErrorWithoutExceptionDetails() = runTest {
+        val fake = FakeSource()
+        fake.failure = IllegalArgumentException("synthetic malformed payload")
+        assertEquals(
+            DataResult.Failure(DataError.INVALID_RESPONSE),
             DefaultArticleRepository(fake).articles(0)
         )
     }

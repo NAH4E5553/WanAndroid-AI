@@ -56,7 +56,7 @@ class WorkflowContracts(unittest.TestCase):
         self.assertEqual(
             {
                 "Build": ":app:assembleDebug",
-                "Unit Tests": "testDebugUnitTest",
+                "Unit Tests": "testAll",
                 "Android Lint": "lintDebug",
                 "Code Format": "spotlessCheck",
                 "Architecture": "verifyArchitecture",
@@ -72,6 +72,14 @@ class WorkflowContracts(unittest.TestCase):
         self.assertIn('"$RUN_ANDROID" != "false"', guard)
         self.assertIn("exit 1", guard)
         self.assertNotIn("continue-on-error", checks)
+
+    def test_unit_tests_upload_both_jvm_and_android_reports(self):
+        rows = workflow("android.yml")["jobs"]["checks"]["strategy"]["matrix"]["include"]
+        row = next(row for row in rows if row["name"] == "Unit Tests")
+        reports = str(row)
+        for path in ("**/build/reports/tests/test/", "**/build/test-results/test/",
+                     "**/build/reports/tests/testDebugUnitTest/", "**/build/test-results/testDebugUnitTest/"):
+            self.assertIn(path, reports)
 
     def test_configuration_checks_run_before_classification(self):
         steps = workflow("android.yml")["jobs"]["changes"]["steps"]

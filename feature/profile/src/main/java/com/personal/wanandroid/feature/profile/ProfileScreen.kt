@@ -1,7 +1,6 @@
 package com.personal.wanandroid.feature.profile
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -61,6 +59,9 @@ import com.personal.wanandroid.core.designsystem.WanPalette
 import com.personal.wanandroid.core.designsystem.WanPaletteSwatches
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.designsystem.swatches
+import com.personal.wanandroid.core.ui.AppListItem
+import com.personal.wanandroid.core.ui.AppScaffold
+import com.personal.wanandroid.core.ui.SettingsSectionLabel
 
 @Composable
 fun ProfileRoute(
@@ -97,7 +98,7 @@ fun ProfileScreen(
             fontWeight = FontWeight.SemiBold
         )
         AccountCard(onLogin)
-        SectionLabel(stringResource(R.string.my_content))
+        SettingsSectionLabel(stringResource(R.string.my_content))
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
@@ -110,7 +111,7 @@ fun ProfileScreen(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             UnavailableRow(stringResource(R.string.offline))
         }
-        SectionLabel(stringResource(R.string.preferences))
+        SettingsSectionLabel(stringResource(R.string.preferences))
         ThemeEntryRow(
             summary = themeSummary,
             palette = currentPalette,
@@ -157,16 +158,6 @@ private fun AccountCard(onLogin: () -> Unit) {
 }
 
 @Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontWeight = FontWeight.Medium
-    )
-}
-
-@Composable
 private fun UnavailableRow(title: String) {
     ListItem(
         headlineContent = { Text(title) },
@@ -183,43 +174,26 @@ private fun UnavailableRow(title: String) {
 
 @Composable
 private fun ThemeEntryRow(summary: String, palette: ThemePalettePreference, onClick: () -> Unit) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .clickable(onClick = onClick)
-            .testTag("theme-entry")
-    ) {
-        Row(
-            modifier = Modifier.padding(WanSpacing.page),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    AppListItem(
+        title = stringResource(R.string.appearance_and_theme),
+        description = summary,
+        modifier = Modifier.testTag("theme-entry"),
+        onClick = onClick,
+        leadingContent = {
             PaletteDots(
-                swatches = palette.toWanPalette().swatches(isCurrentThemeDark()),
+                palette.toWanPalette().swatches(isCurrentThemeDark()),
                 modifier = Modifier.clearAndSetSemantics {}
             )
-            Spacer(Modifier.width(WanSpacing.medium))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.appearance_and_theme),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        },
+        trailingContent = {
             Text(
-                text = "›",
+                "›",
                 fontSize = 28.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clearAndSetSemantics {}
             )
         }
-    }
+    )
 }
 
 @Composable
@@ -257,10 +231,9 @@ fun ThemeSettingsScreen(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
+    AppScaffold(
         modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -278,13 +251,13 @@ fun ThemeSettingsScreen(
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            SectionLabel(stringResource(R.string.palette_style))
+            SettingsSectionLabel(stringResource(R.string.palette_style))
             PaletteGrid(
                 selected = uiState.preferences.palette,
                 mode = uiState.preferences.mode,
                 onSelected = onPaletteSelected
             )
-            SectionLabel(stringResource(R.string.display_mode))
+            SettingsSectionLabel(stringResource(R.string.display_mode))
             ModeSelector(selected = uiState.preferences.mode, onSelected = onModeSelected)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (uiState.isSaving) {

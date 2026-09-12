@@ -17,10 +17,3 @@ data class Topic(val id: Long, val name: String, val parentId: Long? = null)
 
 /** nextPage is a request cursor, not the response curPage display number. */
 data class PageResult<T>(val items: List<T>, val nextPage: Int?)
-
-sealed interface DataResult<out T> {
-    data class Success<T>(val value: T) : DataResult<T>
-    data class Failure(val reason: DataError) : DataResult<Nothing>
-}
-
-enum class DataError { NETWORK, SERVICE, SESSION_EXPIRED, INVALID_RESPONSE }

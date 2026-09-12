@@ -9,22 +9,22 @@ import org.junit.Test
 class BackStackOperationsTest {
     @Test
     fun duplicateBackNeverRemovesRoot() {
-        val stack = mutableListOf<NavKey>(MainRoute, SearchRoute)
-        assertTrue(stack.popIfCurrent(SearchRoute))
-        assertFalse(stack.popIfCurrent(SearchRoute))
-        assertEquals(listOf(MainRoute), stack)
+        val stack = mutableListOf<NavKey>(MainRoute("root"), SearchRoute("search"))
+        assertTrue(stack.popIfCurrent("search"))
+        assertFalse(stack.popIfCurrent("search"))
+        assertEquals(listOf(MainRoute("root")), stack)
     }
 
     @Test
     fun staleCallbackCannotPopAnotherDestination() {
-        val stack = mutableListOf<NavKey>(MainRoute, LoginRoute)
-        assertFalse(stack.popIfCurrent(SearchRoute))
-        assertEquals(LoginRoute, stack.last())
+        val stack = mutableListOf<NavKey>(MainRoute("root"), LoginRoute("login"))
+        assertFalse(stack.popIfCurrent("search"))
+        assertEquals(LoginRoute("login"), stack.last())
     }
 
     @Test
     fun rootCannotBePopped() {
-        val stack = mutableListOf<NavKey>(MainRoute)
-        assertFalse(stack.popIfCurrent(MainRoute))
+        val stack = mutableListOf<NavKey>(MainRoute("root"))
+        assertFalse(stack.popIfCurrent("root"))
     }
 }

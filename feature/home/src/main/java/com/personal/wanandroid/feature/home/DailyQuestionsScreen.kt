@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,23 +18,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -47,7 +37,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.model.Article
-import com.personal.wanandroid.core.model.DataError
+import com.personal.wanandroid.core.ui.NetworkListPage
 
 @Composable
 fun DailyQuestionsRoute(
@@ -65,6 +55,8 @@ fun DailyQuestionsRoute(
         onRetryInitialLoad = viewModel::retryInitialLoad,
         onLoadMore = viewModel::loadMore,
         onRetryLoadMore = viewModel::retryLoadMore,
+        onRetryRefresh = viewModel::retryRefresh,
+        onContinueAfterPause = viewModel::continueAfterPause,
         modifier = modifier
     )
 }
@@ -78,36 +70,10 @@ fun DailyQuestionsScreen(
     onRetryInitialLoad: () -> Unit,
     onLoadMore: () -> Unit,
     onRetryLoadMore: () -> Unit,
+    onRetryRefresh: () -> Unit,
+    onContinueAfterPause: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            layoutInfo.totalItemsCount > 0 && lastVisibleIndex >= layoutInfo.totalItemsCount - 3
-        }
-    }
-    LaunchedEffect(
-        shouldLoadMore,
-        uiState.nextPage,
-        uiState.isInitialLoading,
-        uiState.isRefreshing,
-        uiState.isLoadingMore,
-        uiState.loadMoreError
-    ) {
-        if (
-            shouldLoadMore &&
-            uiState.canLoadMore &&
-            !uiState.isInitialLoading &&
-            !uiState.isRefreshing &&
-            !uiState.isLoadingMore &&
-            uiState.loadMoreError == null
-        ) {
-            onLoadMore()
-        }
-    }
-
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = WanSpacing.small),
@@ -124,59 +90,14 @@ fun DailyQuestionsScreen(
             )
             Spacer(Modifier.width(72.dp))
         }
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = onRefresh,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = WanSpacing.section)
-            ) {
-                when {
-                    uiState.isInitialLoading -> item(key = "initial-loading") {
-                        DailyQuestionsLoading()
-                    }
-
-                    uiState.initialError != null -> item(key = "initial-error") {
-                        DailyQuestionsError(
-                            message = dailyQuestionErrorMessage(uiState.initialError),
-                            onRetry = onRetryInitialLoad
-                        )
-                    }
-
-                    uiState.questions.isEmpty() -> item(key = "empty") {
-                        DailyQuestionsMessage(stringResource(R.string.questions_empty))
-                    }
-
-                    else -> {
-                        uiState.refreshError?.let { error ->
-                            item(key = "refresh-error") {
-                                DailyQuestionsError(
-                                    message = dailyQuestionErrorMessage(error),
-                                    onRetry = onRefresh
-                                )
-                            }
-                        }
-                        items(items = uiState.questions, key = Article::id) { question ->
-                            DailyQuestionListItem(
-                                question = question,
-                                onClick = { onArticleClick(question) }
-                            )
-                        }
-                        item(key = "load-more") {
-                            DailyQuestionsLoadMore(
-                                isLoading = uiState.isLoadingMore,
-                                error = uiState.loadMoreError,
-                                canLoadMore = uiState.canLoadMore,
-                                onRetry = onRetryLoadMore
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        NetworkListPage(
+            state = uiState, keyOf = Article::id,
+            emptyMessage = stringResource(R.string.questions_empty),
+            endMessage = stringResource(R.string.questions_end),
+            onRefresh = onRefresh, onInitialRetry = onRetryInitialLoad,
+            onRefreshRetry = onRetryRefresh, onAppendRetry = onRetryLoadMore,
+            onContinueAfterPause = onContinueAfterPause, onLoadMore = onLoadMore
+        ) { question -> DailyQuestionListItem(question, onClick = { onArticleClick(question) }) }
     }
 }
 
@@ -256,68 +177,3 @@ private fun DailyQuestionListItem(question: Article, onClick: () -> Unit) {
         }
     }
 }
-
-@Composable
-private fun DailyQuestionsLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(WanSpacing.section),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun DailyQuestionsError(message: String, onRetry: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
-        Column(
-            modifier = Modifier.padding(WanSpacing.page),
-            verticalArrangement = Arrangement.spacedBy(WanSpacing.medium)
-        ) {
-            Text(message, style = MaterialTheme.typography.bodyLarge)
-            Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-        }
-    }
-}
-
-@Composable
-private fun DailyQuestionsMessage(message: String) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(WanSpacing.section)
-        )
-    }
-}
-
-@Composable
-private fun DailyQuestionsLoadMore(
-    isLoading: Boolean,
-    error: DataError?,
-    canLoadMore: Boolean,
-    onRetry: () -> Unit
-) {
-    when {
-        isLoading -> DailyQuestionsLoading()
-
-        error != null -> DailyQuestionsError(dailyQuestionErrorMessage(error), onRetry)
-
-        !canLoadMore -> Text(
-            text = stringResource(R.string.questions_end),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)
-        )
-    }
-}
-
-@Composable
-private fun dailyQuestionErrorMessage(error: DataError): String = stringResource(
-    when (error) {
-        DataError.NETWORK -> R.string.error_network
-        DataError.SERVICE -> R.string.error_service
-        DataError.SESSION_EXPIRED -> R.string.error_session_expired
-        DataError.INVALID_RESPONSE -> R.string.error_invalid_response
-    }
-)

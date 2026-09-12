@@ -6,9 +6,9 @@
 
 **阶段 2：第一版功能开发中。不是第一版完整功能交付。**
 
-已建立：版本目录、Convention Plugins、Hilt、Navigation3 根导航、四套浅深主题、主题偏好持久化、首页/专题/我的入口、网络 DTO/Service/DataSource/Repository、Room 分表与导出 Schema、基础架构检查和 CI 配置。首页已接入真实文章列表与最新 5 条问答轮播；“查看更多”进入支持分页的每日一问列表。当前共有 47 个单元测试。
+已建立：版本目录、Convention Plugins、Hilt、Navigation3 根导航、四套浅深主题、主题偏好持久化、首页/专题/我的入口、网络 DTO/Service/DataSource/Repository、Room 分表与导出 Schema、基础架构检查和 CI 配置。首页已接入真实文章列表与最新 5 条问答轮播；“查看更多”进入支持分页的每日一问列表。已完成 CoolMallKotlin 基线封装迁移，统一结果、分页、公共 UI 和 Feature Graph；当前共有 64 个单元测试。
 
-阶段 1 曾完成 Debug 与未签名 Release 构建、13 个单元测试及完整检查。当前分支改动已通过 Debug 构建、47 个单元测试、Spotless、架构检查和 Lint；Release 尚未针对本次改动复验。用户已反馈此前首页、主题选择及最新文章元信息样式在真机完成基本验证；本次问答轮播和列表页尚待真机验证，无障碍等专项仍待验证。
+阶段 1 曾完成 Debug 与未签名 Release 构建、13 个单元测试及完整检查。当前迁移改动已通过 Debug 构建、64 个单元测试、5 个 Android 15 模拟器 Compose 测试、Spotless、架构检查和 Lint；详细范围见基线迁移验证记录，Release 尚未针对本次改动复验。用户已反馈此前首页、主题选择及最新文章元信息样式在真机完成基本验证；本次问答轮播和列表页尚待真机验证，无障碍等专项仍待验证。
 
 界面上的“待接入”是明确的占位状态，不是网络加载失败或真实数据。
 首页文章列表已完成本地实现和单元测试，并由用户反馈已完成真机基本验证；每日一问轮播和分页列表已完成本地实现及测试，待真机验证。搜索交互、专题状态、WebView 阅读、Cookie 登录、收藏、历史页面和正文缓存均未完成。
@@ -21,7 +21,7 @@
 3. 选择 app，运行 debug 变体。
 
 ```bash
-./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug
+./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testAll lintDebug
 ```
 
 仅格式化新工程：`./gradlew spotlessApply`。
@@ -37,6 +37,10 @@ OCR 工作流、规则与日志安全适配器已就绪；经用户确认代码�
 
 - [开发规则](AGENTS.md)
 - [架构与迁移方案](docs/架构与迁移方案.md)
+- [基线差异清单](docs/基线差异清单.md)
+- [模块使用手册](docs/模块使用手册.md)
+- [新增功能开发指南](docs/新增功能开发指南.md)
+- [基线迁移验证记录](docs/基线迁移验证记录.md)
 - [第一版验收清单](docs/第一版验收清单.md)
 - [验证记录](docs/验证记录.md)
 - [主题选择开发方案](docs/主题选择开发方案.md)

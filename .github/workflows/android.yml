@@ -79,8 +79,10 @@ jobs:
             task: ':app:assembleDebug'
             report: 'app/build/outputs/apk/debug/*.apk'
           - name: Unit Tests
-            task: testDebugUnitTest
+            task: testAll
             report: |
+              **/build/reports/tests/test/
+              **/build/test-results/test/
               **/build/reports/tests/testDebugUnitTest/
               **/build/test-results/testDebugUnitTest/
           - name: Android Lint

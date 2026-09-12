@@ -3,20 +3,39 @@ package com.personal.wanandroid.core.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
-@Serializable
-data object MainRoute : NavKey
+/** A logical destination has no entry identity. Only Dispatcher creates stack entries. */
+sealed interface Destination {
+    data object Search : Destination
+    data object Questions : Destination
+    data object Login : Destination
+    data object ThemeSettings : Destination
+    data class Article(val url: String, val title: String, val articleId: Long?) : Destination
+}
 
 @Serializable
-data class ArticleRoute(val url: String, val title: String, val articleId: Long? = null) : NavKey
+sealed interface AppRoute : NavKey {
+    val entryId: String
+}
 
 @Serializable
-data object LoginRoute : NavKey
+data class MainRoute(override val entryId: String) : AppRoute
 
 @Serializable
-data object SearchRoute : NavKey
+data class ArticleRoute(
+    val url: String,
+    val title: String,
+    val articleId: Long?,
+    override val entryId: String
+) : AppRoute
 
 @Serializable
-data object ThemeSettingsRoute : NavKey
+data class LoginRoute(override val entryId: String) : AppRoute
 
 @Serializable
-data object DailyQuestionsRoute : NavKey
+data class SearchRoute(override val entryId: String) : AppRoute
+
+@Serializable
+data class ThemeSettingsRoute(override val entryId: String) : AppRoute
+
+@Serializable
+data class DailyQuestionsRoute(override val entryId: String) : AppRoute
