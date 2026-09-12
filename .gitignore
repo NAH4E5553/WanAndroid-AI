@@ -11,3 +11,6 @@ secrets.properties
 .DS_Store
 captures/
 __pycache__/
+
+# Local documentation only
+/docs/

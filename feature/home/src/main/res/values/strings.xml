@@ -15,9 +15,4 @@
     <string name="questions_empty">暂时没有问答</string>
     <string name="articles_end">已经到底了</string>
     <string name="questions_end">没有更多问答了</string>
-    <string name="retry">重试</string>
-    <string name="error_network">网络连接失败，请检查网络后重试。</string>
-    <string name="error_service">服务暂时不可用，请稍后重试。</string>
-    <string name="error_session_expired">登录状态已失效，请重新登录。</string>
-    <string name="error_invalid_response">数据格式异常，请稍后重试。</string>
 </resources>

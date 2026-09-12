@@ -2,10 +2,10 @@ package com.personal.wanandroid.feature.home
 
 import com.personal.wanandroid.core.data.ArticleRepository
 import com.personal.wanandroid.core.model.Article
-import com.personal.wanandroid.core.model.DataError
-import com.personal.wanandroid.core.model.DataResult
 import com.personal.wanandroid.core.model.PageResult
 import com.personal.wanandroid.core.model.Topic
+import com.personal.wanandroid.core.result.DataError
+import com.personal.wanandroid.core.result.DataResult
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -49,7 +49,7 @@ class DailyQuestionsViewModelTest {
         request.complete(pageSuccess(listOf(question(1)), nextPage = 2))
         runCurrent()
 
-        assertEquals(listOf(1L), viewModel.uiState.value.questions.map(Article::id))
+        assertEquals(listOf(1L), viewModel.uiState.value.items.map(Article::id))
         assertEquals(2, viewModel.uiState.value.nextPage)
         assertFalse(viewModel.uiState.value.isInitialLoading)
     }
@@ -73,7 +73,7 @@ class DailyQuestionsViewModelTest {
         )
         runCurrent()
 
-        assertEquals(listOf(1L, 2L, 3L), viewModel.uiState.value.questions.map(Article::id))
+        assertEquals(listOf(1L, 2L, 3L), viewModel.uiState.value.items.map(Article::id))
         assertNull(viewModel.uiState.value.nextPage)
         assertFalse(viewModel.uiState.value.isLoadingMore)
     }
@@ -100,7 +100,7 @@ class DailyQuestionsViewModelTest {
         retry.complete(pageSuccess(listOf(question(2)), nextPage = null))
         runCurrent()
 
-        assertEquals(listOf(1L, 2L), viewModel.uiState.value.questions.map(Article::id))
+        assertEquals(listOf(1L, 2L), viewModel.uiState.value.items.map(Article::id))
         assertNull(viewModel.uiState.value.loadMoreError)
     }
 
@@ -119,7 +119,7 @@ class DailyQuestionsViewModelTest {
         oldRequest.complete(pageSuccess(listOf(question(1)), nextPage = 2))
         runCurrent()
 
-        assertEquals(listOf(2L), viewModel.uiState.value.questions.map(Article::id))
+        assertEquals(listOf(2L), viewModel.uiState.value.items.map(Article::id))
         assertNull(viewModel.uiState.value.nextPage)
     }
 
@@ -131,14 +131,14 @@ class DailyQuestionsViewModelTest {
         repository.takeRequest().complete(DataResult.Failure(DataError.SERVICE))
         runCurrent()
         assertEquals(DataError.SERVICE, viewModel.uiState.value.initialError)
-        assertTrue(viewModel.uiState.value.questions.isEmpty())
+        assertTrue(viewModel.uiState.value.items.isEmpty())
 
         viewModel.retryInitialLoad()
         runCurrent()
         repository.takeRequest().complete(pageSuccess(listOf(question(2)), nextPage = null))
         runCurrent()
 
-        assertEquals(listOf(2L), viewModel.uiState.value.questions.map(Article::id))
+        assertEquals(listOf(2L), viewModel.uiState.value.items.map(Article::id))
         assertNull(viewModel.uiState.value.initialError)
     }
 }

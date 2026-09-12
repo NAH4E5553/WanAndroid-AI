@@ -7,6 +7,14 @@
 - 不复制来源项目的 `.git`、签名、凭据、local.properties、build/、.gradle/、支付或社交登录 SDK。
 - 操作前确认工作目录；保护已有文件，不执行强制推送或破坏性清理。
 
+## 基线与复用
+
+- 开发前查询 docs/模块使用手册.md、docs/基线差异清单.md 及已有调用方；现有能力适用时必须复用。
+- 优先扩展或优化已有封装；新公共抽象必须有生产需求和实际调用方。同职责只保留一套权威实现。
+- core:result 为纯 Kotlin/JVM 契约；core:common 只承载分页/状态，不依赖 data/network/database/navigation/ui。
+- 固定上下文分页使用 PagingController；复杂页面组合控制器，禁止另存第二套列表、页码或请求任务。
+- Feature Graph 注册自己的页面。普通导航携带捕获的 Host token 与来源 entry ID，不能绕开 Dispatcher 操作栈。
+
 ## 架构
 
 - app 只负责 Application、Activity、根导航和 Feature 组装。
@@ -49,7 +57,7 @@
 - 新依赖必须说明用途、所属模块、替代方案和风险，不随迁移升级整个技术栈。
 - 字符串资源化；支持深色、大字体、系统 Insets、触摸目标与无障碍。
 - 功能修改配套成功、失败、空、取消、竞争测试；占位页面不计作已完成功能。
-- 本地与 CI 同一入口：`./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testDebugUnitTest lintDebug`。
+- 本地与 CI 同一入口：`./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testAll lintDebug`。
 - 准备发布额外验证 `:app:assembleRelease`，不复用商城签名。
 - 只报告实际验证结果；未验证、环境受阻、待用户确认必须分别记录。
 

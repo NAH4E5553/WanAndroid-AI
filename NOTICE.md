@@ -11,3 +11,12 @@ OCR 日志适配基于 Alibaba open-code-review，固定来源提交为
 8d023aafcec05f8ba5628fca3eaba88078e5d201，Copyright 2026 alibaba/open-code-review Contributors。
 准备脚本按 SHA-256 验证并生成修改版 Action/评论辅助脚本，新增输出抑制、基线加载和临时结果清理；不改变上游项目。
 上游使用 Apache-2.0，完整许可见 .github/licenses/open-code-review-LICENSE。
+
+2026-09-12 基线迁移扩大了适配范围（来源版本不变，MIT/Joker.X）：
+- 来源 Result/ResultHandler 职责 → core/result/DataResult 与 core/data/WanResponseMapper；协议/展示职责分离。
+- 来源 BaseNetWorkListViewModel → core/common/PagingController、PagedUiState、BaseNetworkListViewModel；改为服务端游标、原子状态和组合适配。
+- 来源 BaseNetWorkListView、RefreshContent、PageLoading/EmptyNetwork/EmptyData/LoadMore → core/ui/NetworkListPage、NetworkStates；保留 WanAndroid 视觉及 Material 手势。
+- 来源 AppScaffold、AppListItem → core/ui 同名组件；裁剪未使用参数、明确 padding、可选点击语义。
+- 来源 Color/Shape/Size/Theme 组织方式 → WanColor/WanShape/WanSpacing/WanTheme；保留 WanAndroid 四套完整浅深色值和 DataStore。
+- 来源 NavigationService、AppNavigator、Feature Graph → NavigationDispatcher、带 entry ID 的 AppRoute、各 Feature Graph；删除全局服务与点击缓存，增加 Host token 校验。
+这些是基于来源职责与代码进行的适配/优化，不宣称文件逐字一致。完整原始路径、实际调用和差异见 docs/基线差异清单.md。原 MIT 版权和许可继续保留于 LICENSE。

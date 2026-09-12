@@ -1,5 +1,6 @@
 plugins {
     id("wan.android.library")
+    id("wan.hilt")
     alias(libs.plugins.serialization)
 }
 dependencies {

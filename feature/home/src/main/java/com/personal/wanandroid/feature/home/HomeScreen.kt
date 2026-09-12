@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,11 +22,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,10 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -58,8 +51,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.model.Article
-import com.personal.wanandroid.core.model.DataError
+import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.ui.FeaturePlaceholder
+import com.personal.wanandroid.core.ui.MessageCard
+import com.personal.wanandroid.core.ui.NetworkListPage
+import com.personal.wanandroid.core.ui.R as CoreUiR
+import com.personal.wanandroid.core.ui.errorMessage
 import kotlinx.coroutines.delay
 
 @Composable
@@ -83,6 +80,8 @@ fun HomeRoute(
         onRetryInitialLoad = viewModel::retryInitialLoad,
         onLoadMore = viewModel::loadMore,
         onRetryLoadMore = viewModel::retryLoadMore,
+        onRetryRefresh = viewModel::retryRefresh,
+        onContinueAfterPause = viewModel::continueAfterPause,
         modifier = modifier
     )
 }
@@ -98,46 +97,19 @@ fun HomeScreen(
     onRetryInitialLoad: () -> Unit,
     onLoadMore: () -> Unit,
     onRetryLoadMore: () -> Unit,
+    onRetryRefresh: () -> Unit,
+    onContinueAfterPause: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            layoutInfo.totalItemsCount > 0 && lastVisibleIndex >= layoutInfo.totalItemsCount - 3
-        }
-    }
-    LaunchedEffect(
-        shouldLoadMore,
-        uiState.nextPage,
-        uiState.isInitialLoading,
-        uiState.isRefreshing,
-        uiState.isLoadingMore,
-        uiState.loadMoreError
-    ) {
-        if (
-            shouldLoadMore &&
-            uiState.canLoadMore &&
-            !uiState.isInitialLoading &&
-            !uiState.isRefreshing &&
-            !uiState.isLoadingMore &&
-            uiState.loadMoreError == null
-        ) {
-            onLoadMore()
-        }
-    }
-
-    PullToRefreshBox(
-        isRefreshing = uiState.isPullRefreshing,
-        onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = WanSpacing.section)
-        ) {
+    NetworkListPage(
+        state = uiState.articleState, keyOf = Article::id,
+        emptyMessage = stringResource(R.string.articles_empty),
+        endMessage = stringResource(R.string.articles_end),
+        onRefresh = onRefresh, onInitialRetry = onRetryInitialLoad,
+        onRefreshRetry = onRetryRefresh, onAppendRetry = onRetryLoadMore,
+        onContinueAfterPause = onContinueAfterPause, onLoadMore = onLoadMore,
+        isRefreshing = uiState.isPullRefreshing, modifier = modifier,
+        prefix = {
             item(key = "search") {
                 OutlinedButton(
                     onClick = onSearch,
@@ -168,44 +140,8 @@ fun HomeScreen(
                     )
                 )
             }
-
-            when {
-                uiState.isInitialLoading -> item(key = "initial-loading") {
-                    LoadingContent()
-                }
-
-                uiState.initialError != null -> item(key = "initial-error") {
-                    ErrorContent(
-                        message = errorMessage(uiState.initialError),
-                        onRetry = onRetryInitialLoad
-                    )
-                }
-
-                uiState.articles.isEmpty() -> item(key = "empty") {
-                    MessageCard(stringResource(R.string.articles_empty))
-                }
-
-                else -> {
-                    uiState.refreshError?.let { error ->
-                        item(key = "refresh-error") {
-                            ErrorContent(message = errorMessage(error), onRetry = onRefresh)
-                        }
-                    }
-                    items(items = uiState.articles, key = Article::id) { article ->
-                        ArticleCard(article = article, onClick = { onArticleClick(article) })
-                    }
-                    item(key = "load-more") {
-                        LoadMoreContent(
-                            isLoading = uiState.isLoadingMore,
-                            error = uiState.loadMoreError,
-                            canLoadMore = uiState.canLoadMore,
-                            onRetry = onRetryLoadMore
-                        )
-                    }
-                }
-            }
         }
-    }
+    ) { article -> ArticleCard(article = article, onClick = { onArticleClick(article) }) }
 }
 
 @Composable
@@ -378,7 +314,9 @@ private fun QuestionErrorCard(error: DataError, onRetry: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
         ) {
             Text(errorMessage(error), style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            TextButton(onClick = onRetry) {
+                Text(stringResource(CoreUiR.string.retry))
+            }
         }
     }
 }
@@ -395,7 +333,9 @@ private fun QuestionRefreshError(error: DataError, onRetry: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+        TextButton(onClick = onRetry) {
+            Text(stringResource(CoreUiR.string.retry))
+        }
     }
 }
 
@@ -470,71 +410,6 @@ internal fun Article.displayMetadata(
         publishedAt = publishedAt.ifBlank { unknown }
     )
 }
-
-@Composable
-private fun LoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(WanSpacing.section),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorContent(message: String, onRetry: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
-        Column(
-            modifier = Modifier.padding(WanSpacing.page),
-            verticalArrangement = Arrangement.spacedBy(WanSpacing.medium)
-        ) {
-            Text(message, style = MaterialTheme.typography.bodyLarge)
-            Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-        }
-    }
-}
-
-@Composable
-private fun MessageCard(message: String) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(WanSpacing.section)
-        )
-    }
-}
-
-@Composable
-private fun LoadMoreContent(
-    isLoading: Boolean,
-    error: DataError?,
-    canLoadMore: Boolean,
-    onRetry: () -> Unit
-) {
-    when {
-        isLoading -> LoadingContent()
-
-        error != null -> ErrorContent(message = errorMessage(error), onRetry = onRetry)
-
-        !canLoadMore -> Text(
-            text = stringResource(R.string.articles_end),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)
-        )
-    }
-}
-
-@Composable
-private fun errorMessage(error: DataError): String = stringResource(
-    when (error) {
-        DataError.NETWORK -> R.string.error_network
-        DataError.SERVICE -> R.string.error_service
-        DataError.SESSION_EXPIRED -> R.string.error_session_expired
-        DataError.INVALID_RESPONSE -> R.string.error_invalid_response
-    }
-)
 
 @Composable
 fun SearchScreen(onBack: () -> Unit) {

@@ -2,16 +2,18 @@ package com.personal.wanandroid.feature.home
 
 import com.personal.wanandroid.core.data.ArticleRepository
 import com.personal.wanandroid.core.model.Article
-import com.personal.wanandroid.core.model.DataError
-import com.personal.wanandroid.core.model.DataResult
 import com.personal.wanandroid.core.model.PageResult
 import com.personal.wanandroid.core.model.Topic
+import com.personal.wanandroid.core.result.DataError
+import com.personal.wanandroid.core.result.DataResult
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -82,6 +84,9 @@ class HomeViewModelTest {
             questionsResult = DataResult.Success(listOf(article(10), article(11)))
         }
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
 
         assertEquals(listOf(10L, 11L), viewModel.uiState.value.questions.map(Article::id))
@@ -98,6 +103,9 @@ class HomeViewModelTest {
             questionsResult = DataResult.Failure(DataError.NETWORK)
         }
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1)), nextPage = null))
         runCurrent()
@@ -111,6 +119,9 @@ class HomeViewModelTest {
     fun refreshMakesOlderQuestionResultStale() = runTest(dispatcher) {
         val repository = ControllableArticleRepository().apply { holdQuestions = true }
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         val oldArticleRequest = repository.takeRequest()
         val oldQuestionRequest = repository.takeQuestionRequest()
@@ -133,6 +144,9 @@ class HomeViewModelTest {
     fun initialSuccessPublishesArticlesAndCursor() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
 
         assertTrue(viewModel.uiState.value.isInitialLoading)
@@ -149,6 +163,9 @@ class HomeViewModelTest {
     fun emptySuccessIsNotReportedAsFailure() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
 
         repository.takeRequest().complete(success(emptyList(), nextPage = null))
@@ -164,6 +181,9 @@ class HomeViewModelTest {
     fun initialFailureCanRetry() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
 
         repository.takeRequest().complete(DataResult.Failure(DataError.NETWORK))
@@ -183,6 +203,9 @@ class HomeViewModelTest {
     fun initialFailureDoesNotPermitLoadMore() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
 
         repository.takeRequest().complete(DataResult.Failure(DataError.NETWORK))
@@ -198,6 +221,9 @@ class HomeViewModelTest {
     fun refreshFailurePreservesExistingArticles() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1)), nextPage = 1))
         runCurrent()
@@ -217,6 +243,9 @@ class HomeViewModelTest {
     fun loadMoreDeduplicatesAndAdvancesOnlyAfterSuccess() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1), article(2)), nextPage = 1))
         runCurrent()
@@ -236,6 +265,9 @@ class HomeViewModelTest {
     fun loadMoreFailureKeepsCursorAndRetriesSamePage() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1)), nextPage = 1))
         runCurrent()
@@ -262,6 +294,9 @@ class HomeViewModelTest {
     fun repeatedLoadMoreDoesNotStartDuplicateRequests() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1)), nextPage = 1))
         runCurrent()
@@ -279,6 +314,9 @@ class HomeViewModelTest {
     fun terminalPageDoesNotRequestMore() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         repository.takeRequest().complete(success(listOf(article(1)), nextPage = null))
         runCurrent()
@@ -293,6 +331,9 @@ class HomeViewModelTest {
     fun refreshMakesOlderNonCooperativeResultStale() = runTest(dispatcher) {
         val repository = ControllableArticleRepository()
         val viewModel = HomeViewModel(repository)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
         runCurrent()
         val oldRequest = repository.takeRequest()
 
