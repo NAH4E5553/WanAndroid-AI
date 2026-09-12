@@ -35,7 +35,7 @@ import com.personal.wanandroid.feature.home.HomeRoute
 import com.personal.wanandroid.feature.home.homeGraph
 import com.personal.wanandroid.feature.profile.ProfileRoute
 import com.personal.wanandroid.feature.profile.profileGraph
-import com.personal.wanandroid.feature.topics.TopicsScreen
+import com.personal.wanandroid.feature.topics.TopicsRoute
 
 @Composable
 fun AppNavigation(dispatcher: NavigationDispatcher) {
@@ -113,7 +113,10 @@ private fun MainTabs(
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )
 
-                1 -> TopicsScreen(Modifier.fillMaxSize().padding(padding))
+                1 -> TopicsRoute(
+                    onArticleClick = onArticleClick,
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
 
                 2 -> ProfileRoute(
                     onLogin = onLogin,

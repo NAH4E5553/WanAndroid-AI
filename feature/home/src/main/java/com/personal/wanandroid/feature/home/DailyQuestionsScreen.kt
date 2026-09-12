@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.ui.NetworkListPage
+import com.personal.wanandroid.core.ui.R as CoreUiR
+import com.personal.wanandroid.core.ui.displayMetadata
 
 @Composable
 fun DailyQuestionsRoute(
@@ -104,7 +106,7 @@ fun DailyQuestionsScreen(
 @Composable
 private fun DailyQuestionListItem(question: Article, onClick: () -> Unit) {
     val metadata = question.displayMetadata(
-        unknown = stringResource(R.string.metadata_unknown),
+        unknown = stringResource(CoreUiR.string.metadata_unknown),
         categorySeparator = " / "
     )
     Card(
@@ -155,20 +157,20 @@ private fun DailyQuestionListItem(question: Article, onClick: () -> Unit) {
                     }
                     Text(
                         text = if (metadata.usesAuthorLabel) {
-                            stringResource(R.string.article_author, metadata.byline)
+                            stringResource(CoreUiR.string.article_author, metadata.byline)
                         } else {
-                            stringResource(R.string.article_sharer, metadata.byline)
+                            stringResource(CoreUiR.string.article_sharer, metadata.byline)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.article_category, metadata.category),
+                        text = stringResource(CoreUiR.string.article_category, metadata.category),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.article_time, metadata.publishedAt),
+                        text = stringResource(CoreUiR.string.article_time, metadata.publishedAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

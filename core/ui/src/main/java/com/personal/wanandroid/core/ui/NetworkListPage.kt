@@ -14,6 +14,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import com.personal.wanandroid.core.common.PagedUiState
 import com.personal.wanandroid.core.designsystem.WanSpacing
 
@@ -21,6 +22,7 @@ import com.personal.wanandroid.core.designsystem.WanSpacing
  * Adapted from CoolMall BaseNetWorkListView / RefreshContent: state and content slots,
  * with the existing Material refresh gesture and caller-owned scroll state.
  * Prefix content supports multi-request pages without merging their state machines.
+ * Pager previews disable paging until their category is selected and the gesture settles.
  */
 @Composable
 fun <T : Any> NetworkListPage(
@@ -38,6 +40,8 @@ fun <T : Any> NetworkListPage(
     isRefreshing: Boolean = state.isRefreshing,
     listState: LazyListState = rememberLazyListState(),
     prefix: LazyListScope.() -> Unit = {},
+    endTextAlign: TextAlign = TextAlign.Start,
+    pagingEnabled: Boolean = true,
     itemContent: @Composable (T) -> Unit
 ) {
     val shouldLoadMore by remember(listState, state) {
@@ -48,12 +52,12 @@ fun <T : Any> NetworkListPage(
                 state.canAutoLoadMore
         }
     }
-    LaunchedEffect(shouldLoadMore, state.datasetGeneration, state.nextPage) {
-        if (shouldLoadMore) onLoadMore()
+    LaunchedEffect(pagingEnabled, shouldLoadMore, state.datasetGeneration, state.nextPage) {
+        if (pagingEnabled && shouldLoadMore) onLoadMore()
     }
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+        onRefresh = { if (pagingEnabled) onRefresh() },
         modifier = modifier.fillMaxSize()
     ) {
         LazyColumn(
@@ -87,7 +91,8 @@ fun <T : Any> NetworkListPage(
                                 error = state.loadMoreError,
                                 canLoadMore = state.canLoadMore,
                                 onRetry = onAppendRetry,
-                                endMessage = endMessage
+                                endMessage = endMessage,
+                                endTextAlign = endTextAlign
                             )
                         }
                     }

@@ -6,6 +6,8 @@ import com.personal.wanandroid.core.model.PageResult
 import com.personal.wanandroid.core.model.Topic
 import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.result.DataResult
+import com.personal.wanandroid.core.ui.ArticleDisplayMetadata
+import com.personal.wanandroid.core.ui.displayMetadata
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine

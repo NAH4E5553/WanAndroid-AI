@@ -52,6 +52,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.result.DataError
+import com.personal.wanandroid.core.ui.ArticleCard
 import com.personal.wanandroid.core.ui.MessageCard
 import com.personal.wanandroid.core.ui.NetworkListPage
 import com.personal.wanandroid.core.ui.R as CoreUiR
@@ -342,70 +343,3 @@ internal fun nextQuestionIndex(currentIndex: Int, questionCount: Int): Int =
     if (questionCount <= 1) 0 else (currentIndex + 1) % questionCount
 
 private const val QUESTION_INTERVAL_MILLIS = 4_000L
-
-@Composable
-internal fun ArticleCard(article: Article, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(
-            horizontal = WanSpacing.page,
-            vertical = WanSpacing.small
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(WanSpacing.page),
-            verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
-        ) {
-            val metadata = article.displayMetadata(stringResource(R.string.metadata_unknown))
-            Text(
-                text = AnnotatedString.fromHtml(article.title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = if (metadata.usesAuthorLabel) {
-                    stringResource(R.string.article_author, metadata.byline)
-                } else {
-                    stringResource(R.string.article_sharer, metadata.byline)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(
-                    R.string.article_category,
-                    metadata.category
-                ),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = stringResource(R.string.article_time, metadata.publishedAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-internal data class ArticleDisplayMetadata(
-    val usesAuthorLabel: Boolean,
-    val byline: String,
-    val category: String,
-    val publishedAt: String
-)
-
-internal fun Article.displayMetadata(
-    unknown: String,
-    categorySeparator: String = "/"
-): ArticleDisplayMetadata {
-    val usesAuthorLabel = author.isNotBlank()
-    return ArticleDisplayMetadata(
-        usesAuthorLabel = usesAuthorLabel,
-        byline = if (usesAuthorLabel) author else shareUser.ifBlank { unknown },
-        category = listOf(superChapterName, chapter)
-            .filter(String::isNotBlank)
-            .joinToString(categorySeparator)
-            .ifBlank { unknown },
-        publishedAt = publishedAt.ifBlank { unknown }
-    )
-}

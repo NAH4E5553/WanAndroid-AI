@@ -30,6 +30,7 @@ class PagingController<T : Any, C : Any>(
     private var generation = 0L
     private var active: Request? = null
     private var failed: Request? = null
+    private var suspendedRequest: Request? = null
     private var started = false
     private val automaticPages = mutableSetOf<Int>()
 
@@ -50,6 +51,20 @@ class PagingController<T : Any, C : Any>(
             contextGeneration = previous.contextGeneration + 1
         )
         launch(initialPage, Operation.INITIAL)
+    }
+
+    /** Keep this list's data/cursor while its category is inactive; reject late completions. */
+    fun pauseLoading() {
+        val request = active ?: return
+        suspendedRequest = request
+        active = null
+        job?.cancel()
+    }
+
+    /** Resume the interrupted operation at the same cursor, without resetting cached content. */
+    fun resumeLoading() {
+        val request = suspendedRequest ?: return
+        launch(request.page, request.operation)
     }
 
     fun startInitialLoad() {
@@ -103,6 +118,7 @@ class PagingController<T : Any, C : Any>(
     }
 
     private fun launch(page: Int, operation: Operation) {
+        suspendedRequest = null
         val request = Request(++generation, page, operation)
         active = request
         failed = null
