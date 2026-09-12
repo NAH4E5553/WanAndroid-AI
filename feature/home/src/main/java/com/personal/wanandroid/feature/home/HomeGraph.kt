@@ -7,15 +7,23 @@ import com.personal.wanandroid.core.navigation.Destination
 import com.personal.wanandroid.core.navigation.NavigationDispatcher
 import com.personal.wanandroid.core.navigation.NavigationHostToken
 import com.personal.wanandroid.core.navigation.NavigationSource
-import com.personal.wanandroid.core.navigation.SearchRoute
+import com.personal.wanandroid.core.navigation.SearchRoute as SearchKey
 
 fun EntryProviderScope<NavKey>.homeGraph(
     dispatcher: NavigationDispatcher,
     host: NavigationHostToken
 ) {
-    entry<SearchRoute>(clazzContentKey = { it.entryId }) { route ->
+    entry<SearchKey>(clazzContentKey = { it.entryId }) { route ->
         val source = NavigationSource(host, route.entryId)
-        SearchScreen(onBack = { dispatcher.back(source) })
+        SearchRoute(
+            onBack = { dispatcher.back(source) },
+            onArticleClick = { article ->
+                dispatcher.navigateFrom(
+                    source,
+                    Destination.Article(article.url, article.title, article.id)
+                )
+            }
+        )
     }
     entry<QuestionsKey>(clazzContentKey = { it.entryId }) { route ->
         val source = NavigationSource(host, route.entryId)

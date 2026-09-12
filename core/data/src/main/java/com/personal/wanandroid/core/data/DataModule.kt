@@ -11,6 +11,18 @@ import javax.inject.Singleton
 abstract class DataModule {
     @Binds
     @Singleton
+    internal abstract fun searchHistory(
+        implementation: PreferencesSearchHistoryDataSource
+    ): SearchHistoryDataSource
+
+    @Binds
+    @Singleton
+    internal abstract fun searchSuggestions(
+        implementation: DefaultSearchSuggestionsRepository
+    ): SearchSuggestionsRepository
+
+    @Binds
+    @Singleton
     abstract fun bindArticleRepository(implementation: DefaultArticleRepository): ArticleRepository
 
     @Binds

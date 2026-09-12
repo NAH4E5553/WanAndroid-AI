@@ -8,7 +8,7 @@ sealed interface LoadState {
     data class Failure(val error: DataError) : LoadState
 }
 
-/** One authoritative snapshot for a fixed-context list. Loading is not a data result. */
+/** One authoritative snapshot for a list within its active context. Loading is not a data result. */
 data class PagedUiState<T>(
     val items: List<T> = emptyList(),
     val initial: LoadState = LoadState.Idle,

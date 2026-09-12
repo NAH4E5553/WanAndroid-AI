@@ -47,9 +47,13 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(private val repository: ArticleRepository) : ViewModel() {
     private val articles =
-        PagingController(viewModelScope, 0, Article::id) { repository.articles(it) }
+        PagingController(viewModelScope, 0, Article::id, Unit) { _, page ->
+            repository.articles(page)
+        }
     private val questions = MutableStateFlow(QuestionUiState())
-    val uiState = combine(articles.state, questions, ::HomeUiState).stateIn(
+    val uiState = combine(articles.state, questions) { articles, questions ->
+        HomeUiState(articles.page, questions)
+    }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
         HomeUiState()

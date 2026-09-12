@@ -220,10 +220,10 @@ private data class Pending(
 )
 private class Harness(scope: CoroutineScope, first: Int = 0) {
     val requests = ArrayDeque<Pending>()
-    val controller = PagingController(scope, first, Item::id) { page ->
+    val controller = PagingController(scope, first, Item::id, Unit) { _, page ->
         suspendCoroutine { requests.addLast(Pending(page, it)) }
     }
-    val state get() = controller.state.value
+    val state get() = controller.state.value.page
     fun complete(items: List<Item>, next: Int?) {
         requests.removeFirst().continuation.resume(DataResult.Success(PageResult(items, next)))
     }

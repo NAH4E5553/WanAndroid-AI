@@ -13,17 +13,18 @@ import kotlinx.coroutines.launch
 /**
  * Adapted from CoolMallKotlin BaseNetWorkListViewModel (cf5029b).
  * A single owner serializes calls on Main; requests use its scope and immutable page snapshots.
- * This controller supports a fixed request context only. No account/category switching contract.
+ * Context values must be immutable. A reset clears data and invalidates every older request.
  */
-class PagingController<T : Any>(
+class PagingController<T : Any, C : Any>(
     private val scope: CoroutineScope,
     private val initialPage: Int,
     private val keyOf: (T) -> Any,
-    private val requestPage: suspend (Int) -> DataResult<PageResult<T>>
+    initialContext: C,
+    private val requestPage: suspend (C, Int) -> DataResult<PageResult<T>>
 ) {
     private enum class Operation { INITIAL, REFRESH, AUTO, CONTINUE }
     private data class Request(val id: Long, val page: Int, val operation: Operation)
-    private val mutableState = MutableStateFlow(PagedUiState<T>())
+    private val mutableState = MutableStateFlow(PagingState<T, C>(initialContext))
     val state = mutableState.asStateFlow()
     private var job: Job? = null
     private var generation = 0L
@@ -31,6 +32,26 @@ class PagingController<T : Any>(
     private var failed: Request? = null
     private var started = false
     private val automaticPages = mutableSetOf<Int>()
+
+    /** Atomically publish the new context with an empty page before starting its first request. */
+    fun reset(context: C) {
+        generation++
+        active = null
+        job?.cancel()
+        failed = null
+        automaticPages.clear()
+        started = true
+        val previous = state.value
+        mutableState.value = PagingState(
+            context = context,
+            page = PagedUiState(
+                initial = LoadState.Loading,
+                datasetGeneration = previous.page.datasetGeneration + 1
+            ),
+            contextGeneration = previous.contextGeneration + 1
+        )
+        launch(initialPage, Operation.INITIAL)
+    }
 
     fun startInitialLoad() {
         if (started) return
@@ -53,14 +74,14 @@ class PagingController<T : Any>(
     }
 
     fun loadMore() {
-        val snapshot = state.value
+        val snapshot = state.value.page
         val page = snapshot.nextPage ?: return
         if (active != null || !snapshot.canAutoLoadMore || !automaticPages.add(page)) return
         launch(page, Operation.AUTO)
     }
 
     fun continueAfterPause() {
-        val snapshot = state.value
+        val snapshot = state.value.page
         val page = snapshot.nextPage ?: return
         if (active != null || !snapshot.autoLoadPaused || snapshot.loadMoreError != null) return
         launch(page, Operation.CONTINUE)
@@ -78,7 +99,7 @@ class PagingController<T : Any>(
         job?.cancel()
         launch(
             initialPage,
-            if (state.value.items.isEmpty()) Operation.INITIAL else Operation.REFRESH
+            if (state.value.page.items.isEmpty()) Operation.INITIAL else Operation.REFRESH
         )
     }
 
@@ -86,31 +107,34 @@ class PagingController<T : Any>(
         val request = Request(++generation, page, operation)
         active = request
         failed = null
-        val previous = state.value
-        mutableState.value = when (operation) {
-            Operation.INITIAL -> PagedUiState(
-                initial = LoadState.Loading,
-                datasetGeneration = previous.datasetGeneration
-            )
+        val previous = state.value.page
+        publish(
+            when (operation) {
+                Operation.INITIAL -> PagedUiState(
+                    initial = LoadState.Loading,
+                    datasetGeneration = previous.datasetGeneration
+                )
 
-            Operation.REFRESH -> previous.copy(
-                initial = LoadState.Idle,
-                refresh = LoadState.Loading,
-                append = LoadState.Idle,
-                consecutiveNoProgress = 0,
-                autoLoadPaused = false
-            )
+                Operation.REFRESH -> previous.copy(
+                    initial = LoadState.Idle,
+                    refresh = LoadState.Loading,
+                    append = LoadState.Idle,
+                    consecutiveNoProgress = 0,
+                    autoLoadPaused = false
+                )
 
-            Operation.AUTO, Operation.CONTINUE -> previous.copy(
-                initial = LoadState.Idle,
-                refresh = LoadState.Idle,
-                append = LoadState.Loading,
-                autoLoadPaused = false
-            )
-        }
+                Operation.AUTO, Operation.CONTINUE -> previous.copy(
+                    initial = LoadState.Idle,
+                    refresh = LoadState.Idle,
+                    append = LoadState.Loading,
+                    autoLoadPaused = false
+                )
+            }
+        )
+        val requestContext = state.value.context
         job = scope.launch request@{
             val result = try {
-                requestPage(page)
+                requestPage(requestContext, page)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -136,19 +160,25 @@ class PagingController<T : Any>(
         }
     }
 
+    private fun publish(page: PagedUiState<T>) {
+        mutableState.value = state.value.copy(page = page)
+    }
+
     private fun finishFailure(request: Request, error: DataError) {
         active = null
         failed = request
         val failure = LoadState.Failure(error)
-        mutableState.value = when (request.operation) {
-            Operation.INITIAL -> state.value.copy(initial = failure)
-            Operation.REFRESH -> state.value.copy(refresh = failure)
-            Operation.AUTO, Operation.CONTINUE -> state.value.copy(append = failure)
-        }
+        publish(
+            when (request.operation) {
+                Operation.INITIAL -> state.value.page.copy(initial = failure)
+                Operation.REFRESH -> state.value.page.copy(refresh = failure)
+                Operation.AUTO, Operation.CONTINUE -> state.value.page.copy(append = failure)
+            }
+        )
     }
 
     private fun finishSuccess(request: Request, page: PageResult<T>) {
-        val current = state.value
+        val current = state.value.page
         val replacing =
             request.operation == Operation.INITIAL || request.operation == Operation.REFRESH
         val merged = linkedMapOf<Any, T>()
@@ -168,12 +198,21 @@ class PagingController<T : Any>(
         if (replacing) automaticPages.clear()
         active = null
         failed = null
-        mutableState.value = PagedUiState(
-            items = merged.values.toList(),
-            nextPage = page.nextPage,
-            consecutiveNoProgress = count,
-            autoLoadPaused = paused,
-            datasetGeneration = current.datasetGeneration + if (replacing) 1 else 0
+        publish(
+            PagedUiState(
+                items = merged.values.toList(),
+                nextPage = page.nextPage,
+                consecutiveNoProgress = count,
+                autoLoadPaused = paused,
+                datasetGeneration = current.datasetGeneration + if (replacing) 1 else 0
+            )
         )
     }
 }
+
+/** Context and results move together; page is the same snapshot consumed by shared list UI. */
+data class PagingState<T, C>(
+    val context: C,
+    val page: PagedUiState<T> = PagedUiState(),
+    val contextGeneration: Long = 0
+)

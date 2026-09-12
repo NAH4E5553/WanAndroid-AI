@@ -25,3 +25,5 @@ OCR 日志适配基于 Alibaba open-code-review，固定来源提交为
 - feature/common 的 util/WebUrlPolicy.kt、util/WebViewSecurity.kt → feature/article/ReaderUrlPolicy.kt、ReaderWebView.kt；适配多来源 HTTPS 文章、外部跳转确认及 WebView 生命周期。
 - feature/common 的 view/WebScreen.kt、viewmodel/WebViewModel.kt → feature/article/ArticleScreen.kt、ArticleViewModel.kt；复用页面分层、进度与释放职责，状态收敛为单一快照并增加过期回调、超时及安全 URL 恢复保护。
 不复制商城原生桥、业务凭据或 SDK。
+
+2026-09-12 搜索增量继续扩展此前适配的 PagingController/BaseNetworkListViewModel：增加不可变请求上下文、原子上下文与页面快照及 reset 隔离；固定首页/问答传 Unit，搜索使用关键词。搜索页面复用本项目已有文章卡片、公共列表与导航，不另引入商城业务代码。
