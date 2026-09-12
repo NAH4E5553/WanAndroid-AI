@@ -264,6 +264,44 @@ class TopicsViewModelTest {
         assertEquals(10L, saved.get<Long>("topics.child.9"))
     }
 
+    @Test fun reloadingTreeDropsRemovedControllersAndRejectsTheirLateResults() = runTest(
+        dispatcher
+    ) {
+        val vm = model()
+        runCurrent()
+        repository.requests.removeFirst().success(listOf(article(1)), null)
+        runCurrent()
+        vm.selectTopic(11)
+        runCurrent()
+        val removed = repository.requests.removeFirst()
+        repository.topics = DataResult.Success(
+            listOf(Topic(9, "Parent"), Topic(10, "First", 9))
+        )
+        vm.retryTopics()
+        runCurrent()
+        assertTrue(removed.job.isCancelled)
+        assertEquals(10L, vm.uiState.value.selectedId)
+        assertEquals(setOf(10L), vm.uiState.value.pageStates.keys)
+        assertEquals(listOf(1L), vm.uiState.value.page.items.map { it.id })
+        removed.success(listOf(article(99)), null)
+        runCurrent()
+        assertEquals(setOf(10L), vm.uiState.value.pageStates.keys)
+        assertTrue(repository.requests.isEmpty())
+        repository.topics = DataResult.Success(
+            listOf(Topic(9, "Parent"), Topic(10, "First", 9), Topic(11, "Restored", 9))
+        )
+        vm.retryTopics()
+        runCurrent()
+        vm.selectTopic(11)
+        runCurrent()
+        val reintroduced = repository.requests.removeFirst()
+        assertEquals(11L to 0, reintroduced.id to reintroduced.page)
+        assertTrue(vm.uiState.value.page.items.isEmpty())
+        reintroduced.success(listOf(article(2)), null)
+        runCurrent()
+        assertEquals(listOf(2L), vm.uiState.value.page.items.map { it.id })
+    }
+
     @Test fun restoresValidIdAndFallsBackWhenIdDisappears() = runTest(dispatcher) {
         for ((savedId, expected) in listOf(12L to 12L, 999L to 10L)) {
             val vm = model(SavedStateHandle(mapOf("topics.selectedId" to savedId)))

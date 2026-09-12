@@ -56,6 +56,11 @@ class TopicsViewModel @Inject constructor(
             when (val result = repository.topics()) {
                 is DataResult.Success -> {
                     val topics = result.value.distinctBy { it.id }
+                    val parentIds = topics.filter { it.parentId == null }.map { it.id }.toSet()
+                    val childIds = topics.filter { it.parentId in parentIds }.map { it.id }.toSet()
+                    pageObserver?.cancel()
+                    pages.values.forEach { it.pauseLoading() }
+                    pages.keys.retainAll(childIds)
                     mutableState.value = TopicsUiState(topics = topics, loading = false)
                     val restored = topics.firstOrNull {
                         it.id == savedState.get<Long>("topics.selectedId")
