@@ -11,6 +11,8 @@ internal sealed interface ReaderDestination {
 
 /** Adapted from CoolMall WebUrlPolicy (cf5029b): article hosts vary; schemes remain restricted. */
 internal object ReaderUrlPolicy {
+    private val encodedNewline = Regex("%0[ad]", RegexOption.IGNORE_CASE)
+
     fun classify(raw: String): ReaderDestination {
         val value = raw.trim()
         if (value.isEmpty() || value.length > 8192 || value.any { it.isISOControl() }) {
@@ -46,7 +48,7 @@ internal object ReaderUrlPolicy {
         }
         // Never parse intent:// payloads, javascript:, file:, content: or arbitrary app schemes.
         if (scheme in setOf("tel", "mailto", "geo") && !uri.rawSchemeSpecificPart.isNullOrBlank() &&
-            !Regex("%0[ad]", RegexOption.IGNORE_CASE).containsMatchIn(value)
+            !encodedNewline.containsMatchIn(value)
         ) {
             return ReaderDestination.External(value)
         }

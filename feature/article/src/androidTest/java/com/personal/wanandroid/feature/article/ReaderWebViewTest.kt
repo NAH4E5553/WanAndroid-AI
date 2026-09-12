@@ -42,9 +42,9 @@ class ReaderWebViewTest {
                                 request: WebResourceRequest
                             ): WebResourceResponse {
                                 super.shouldInterceptRequest(view, request)?.let { return it }
-                                val missing = request.url.path == "/missing"
+                                val missing = request.url.path in setOf("/missing", "/img-missing")
                                 val html = "<html><head><title>Fixture</title></head>" +
-                                    "<body>Offline fixture<img src='/missing'>" +
+                                    "<body>Offline fixture<img src='/img-missing'>" +
                                     "<a href='$two'>Next</a></body></html>"
                                 return WebResourceResponse(
                                     "text/html",
@@ -79,10 +79,15 @@ class ReaderWebViewTest {
         events.clear()
         compose.runOnIdle {
             assertTrue(browser.canGoBack())
-            browser.goBack()
+            navigateReaderBack(browser) { error("Must return in webpage history") }
         }
         finished(one)
-        compose.runOnIdle { assertFalse(browser.canGoBack()) }
+        compose.runOnIdle {
+            assertFalse(browser.canGoBack())
+            var exits = 0
+            navigateReaderBack(browser) { exits++ }
+            assertEquals(1, exits)
+        }
     }
 
     @Test fun settingsRestrictFileMixedContentCookiesAndDisposalReleases() {
@@ -94,7 +99,9 @@ class ReaderWebViewTest {
             assertEquals(WebSettings.MIXED_CONTENT_NEVER_ALLOW, browser.settings.mixedContentMode)
             assertFalse(CookieManager.getInstance().acceptThirdPartyCookies(browser))
             assertEquals(150, browser.settings.textZoom)
-            assertTrue(browser.settings.isAlgorithmicDarkeningAllowed)
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                assertTrue(browser.settings.isAlgorithmicDarkeningAllowed)
+            }
             visible.value = false
         }
         compose.waitUntil { browser.released }
@@ -137,6 +144,7 @@ class ReaderWebViewTest {
 
     @Test fun mainHttpFailureIsReportedButSubresourceFailureIsIgnored() {
         mount()
+        assertFalse(events.any { it is ReaderEvent.Failed })
         events.clear()
         compose.runOnIdle { browser.loadUrl("https://reader.invalid/missing") }
         compose.waitUntil(15_000) {
@@ -145,6 +153,17 @@ class ReaderWebViewTest {
                     it.reason == ReaderFailure.HTTP
             }
         }
+        finished("https://reader.invalid/missing")
+        assertTrue(
+            events.filterIsInstance<ReaderEvent.Failed>().all {
+                it.url == "https://reader.invalid/missing"
+            }
+        )
+        assertFalse(
+            events.any {
+                it is ReaderEvent.Failed && it.url.endsWith("/img-missing")
+            }
+        )
     }
 
     @Test fun inMemoryRestorationRetainsNativeHistory() {

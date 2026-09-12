@@ -56,17 +56,9 @@ internal fun ArticleRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val holder = remember { BrowserHolder() }
-    val back = {
-        val browser = holder.view
-        if (browser != null && !browser.released && !browser.rendererGone &&
-            browser.canGoBack()
-        ) {
-            browser.goBack()
-        } else {
-            onBack()
-        }
-    }
-    BackHandler(enabled = state.canGoBack) { back() }
+    val back = { navigateReaderBack(holder.view, onBack) }
+    // Always intercept here; decide from the live browser when the gesture is dispatched.
+    BackHandler { back() }
     ArticleScreen(
         state,
         back,
@@ -79,12 +71,7 @@ internal fun ArticleRoute(
         {
             viewModel.consumeExternal()?.let { url ->
                 try {
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse(url)
-                        ).addCategory(Intent.CATEGORY_BROWSABLE)
-                    )
+                    context.startActivity(readerExternalIntent(url))
                 } catch (_: ActivityNotFoundException) {
                     viewModel.externalUnavailable()
                 } catch (_: SecurityException) {
@@ -318,4 +305,19 @@ private fun ReaderFailure.messageId(): Int = when (this) {
     ReaderFailure.TIMEOUT -> R.string.reader_timeout
     ReaderFailure.RENDERER -> R.string.reader_renderer_error
     ReaderFailure.UNSAFE -> R.string.reader_unsafe
+}
+
+internal fun navigateReaderBack(browser: ReaderWebView?, onExit: () -> Unit) {
+    if (browser != null && !browser.released && !browser.rendererGone && browser.canGoBack()) {
+        browser.goBack()
+    } else {
+        onExit()
+    }
+}
+
+internal fun readerExternalIntent(url: String): Intent {
+    val target = Uri.parse(requireNotNull(ReaderUrlPolicy.externalUrl(url)))
+    return Intent(Intent.ACTION_VIEW, target).apply {
+        if (target.scheme in setOf("https", "http")) addCategory(Intent.CATEGORY_BROWSABLE)
+    }
 }
