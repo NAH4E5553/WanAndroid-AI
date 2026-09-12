@@ -35,7 +35,6 @@ class PagingController<T : Any, C : Any>(
 
     /** Atomically publish the new context with an empty page before starting its first request. */
     fun reset(context: C) {
-        generation++
         active = null
         job?.cancel()
         failed = null
@@ -211,7 +210,7 @@ class PagingController<T : Any, C : Any>(
 }
 
 /** Context and results move together; page is the same snapshot consumed by shared list UI. */
-data class PagingState<T, C>(
+data class PagingState<T : Any, C : Any>(
     val context: C,
     val page: PagedUiState<T> = PagedUiState(),
     val contextGeneration: Long = 0
