@@ -131,11 +131,21 @@ tasks.register("verifyArchitecture") {
 // Configure lazily as each platform plugin is applied, including future modules.
 val testAll = tasks.register("testAll") { group = "verification" }
 subprojects {
-    val module = this
+    val modulePath = path
     plugins.withId("com.android.base") {
-        testAll.configure { dependsOn("${module.path}:testDebugUnitTest") }
+        testAll.configure { dependsOn("$modulePath:testDebugUnitTest") }
     }
     plugins.withId("org.jetbrains.kotlin.jvm") {
-        testAll.configure { dependsOn("${module.path}:test") }
+        testAll.configure { dependsOn("$modulePath:test") }
+    }
+    afterEvaluate {
+        val namespaceOnly = modulePath in setOf(":core", ":feature") &&
+            !buildFile.exists() && !file("src").exists()
+        check(
+            namespaceOnly || plugins.hasPlugin("com.android.base") ||
+                plugins.hasPlugin("org.jetbrains.kotlin.jvm")
+        ) {
+            "Unsupported test platform: $modulePath. Register its tests in testAll."
+        }
     }
 }

@@ -55,6 +55,7 @@ import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.ui.FeaturePlaceholder
 import com.personal.wanandroid.core.ui.MessageCard
 import com.personal.wanandroid.core.ui.NetworkListPage
+import com.personal.wanandroid.core.ui.R as CoreUiR
 import com.personal.wanandroid.core.ui.errorMessage
 import kotlinx.coroutines.delay
 
@@ -314,7 +315,7 @@ private fun QuestionErrorCard(error: DataError, onRetry: () -> Unit) {
         ) {
             Text(errorMessage(error), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onRetry) {
-                Text(stringResource(com.personal.wanandroid.core.ui.R.string.retry))
+                Text(stringResource(CoreUiR.string.retry))
             }
         }
     }
@@ -333,7 +334,7 @@ private fun QuestionRefreshError(error: DataError, onRetry: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         TextButton(onClick = onRetry) {
-            Text(stringResource(com.personal.wanandroid.core.ui.R.string.retry))
+            Text(stringResource(CoreUiR.string.retry))
         }
     }
 }

@@ -81,6 +81,15 @@ class WorkflowContracts(unittest.TestCase):
                      "**/build/reports/tests/testDebugUnitTest/", "**/build/test-results/testDebugUnitTest/"):
             self.assertIn(path, reports)
 
+    def test_unit_tests_exercise_aggregation_guard(self):
+        steps = workflow("android.yml")["jobs"]["checks"]["steps"]
+        step = next(step for step in steps if step.get("name") == "Verify test aggregation coverage")
+        self.assertEqual(
+            "needs.changes.outputs.run_android == 'true' && matrix.name == 'Unit Tests'", step["if"]
+        )
+        self.assertEqual("python3 .github/scripts/verify_test_aggregation.py", step["run"])
+        self.assertNotIn("continue-on-error", step)
+
     def test_configuration_checks_run_before_classification(self):
         steps = workflow("android.yml")["jobs"]["changes"]["steps"]
         tests = next(i for i, step in enumerate(steps) if "unittest" in step.get("run", ""))

@@ -21,6 +21,8 @@ GitHub 首次 push 的 Android CI 六项检查已通过；PR #1 的六项必需�
 | Code Format | spotlessCheck |
 | Architecture | verifyArchitecture |
 
+Unit Tests 在 testAll 后执行 `python3 .github/scripts/verify_test_aggregation.py`：核对真实任务图包含 Android/JVM 测试，并通过临时注入不支持的平台模块确认配置会失败。仅无构建文件和源码的 `:core`/`:feature` 目录节点允许跳过。
+
 五项 Android 检查以矩阵独立运行，fail-fast=false；单项失败不会取消其他诊断。
 PR 指向 main、push main 或手动运行触发 CI。整条必需工作流不用路径过滤，避免长期 Pending。
 配置检查始终执行。只有已知的 README.md、NOTICE.md、docs/**/*.md、.github/**/*.md 可以跳过 Android Gradle 任务；任何位置的 AGENTS.md 仍执行全检查。
@@ -47,6 +49,7 @@ build/ci-tools/venv/bin/python -m unittest discover -s .github/tests -v
 build/ci-tools/actionlint -shellcheck= -pyflakes= .github/workflows/*.yml
 bash -n .github/scripts/should-run-android-ci.sh
 ./gradlew verifyArchitecture spotlessCheck :app:assembleDebug testAll lintDebug --no-daemon --stacktrace
+python3 .github/scripts/verify_test_aggregation.py
 ```
 
 PyYAML 固定为 6.0.2，用于测试安全解析及重复键检测。actionlint 固定 1.7.7，下载包以代码中记录的官方 SHA-256 校验后，只提取名为 actionlint 的普通文件。

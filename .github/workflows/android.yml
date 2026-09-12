@@ -130,6 +130,9 @@ jobs:
         env:
           GRADLE_TASK: ${{ matrix.task }}
         run: ./gradlew "$GRADLE_TASK" --no-daemon --stacktrace
+      - name: Verify test aggregation coverage
+        if: needs.changes.outputs.run_android == 'true' && matrix.name == 'Unit Tests'
+        run: python3 .github/scripts/verify_test_aggregation.py
       - name: Upload diagnostic reports
         if: always() && needs.changes.outputs.run_android == 'true' && matrix.report != ''
         uses: actions/upload-artifact@v4
