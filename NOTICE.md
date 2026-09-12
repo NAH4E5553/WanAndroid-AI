@@ -20,3 +20,8 @@ OCR 日志适配基于 Alibaba open-code-review，固定来源提交为
 - 来源 Color/Shape/Size/Theme 组织方式 → WanColor/WanShape/WanSpacing/WanTheme；保留 WanAndroid 四套完整浅深色值和 DataStore。
 - 来源 NavigationService、AppNavigator、Feature Graph → NavigationDispatcher、带 entry ID 的 AppRoute、各 Feature Graph；删除全局服务与点击缓存，增加 Host token 校验。
 这些是基于来源职责与代码进行的适配/优化，不宣称文件逐字一致。完整原始路径、实际调用和差异见 docs/基线差异清单.md。原 MIT 版权和许可继续保留于 LICENSE。
+
+2026-09-12 在线阅读沿用同一来源版本：
+- feature/common 的 util/WebUrlPolicy.kt、util/WebViewSecurity.kt → feature/article/ReaderUrlPolicy.kt、ReaderWebView.kt；适配多来源 HTTPS 文章、外部跳转确认及 WebView 生命周期。
+- feature/common 的 view/WebScreen.kt、viewmodel/WebViewModel.kt → feature/article/ArticleScreen.kt、ArticleViewModel.kt；复用页面分层、进度与释放职责，状态收敛为单一快照并增加过期回调、超时及安全 URL 恢复保护。
+不复制商城原生桥、业务凭据或 SDK。
