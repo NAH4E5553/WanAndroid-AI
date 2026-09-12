@@ -27,3 +27,5 @@ OCR 日志适配基于 Alibaba open-code-review，固定来源提交为
 不复制商城原生桥、业务凭据或 SDK。
 
 2026-09-12 搜索增量继续扩展此前适配的 PagingController/BaseNetworkListViewModel：增加不可变请求上下文、原子上下文与页面快照及 reset 隔离；固定首页/问答传 Unit，搜索使用关键词。搜索页面复用本项目已有文章卡片、公共列表与导航，不另引入商城业务代码。
+
+2026-09-12 专题左栏增量参考 CoolMallKotlin 当前只读版本 0e6a9aa4a10d4c8139f1eb0455db3a826c99657e（MIT/Joker.X）：feature/main/view/CategoryScreen.kt 的左侧选中样式、菜单定位及 drawLeftCategoryGroups/drawRightRoundedRect 路径绘制适配到 feature/topics/TopicsScreen.kt。使用 WanAndroid 分类 ID、动态行高和主题颜色；不迁入右侧滚动反向选中、自动切换分类、商品网格、图片或商品导航。

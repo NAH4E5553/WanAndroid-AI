@@ -56,6 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.ui.AppScaffold
+import com.personal.wanandroid.core.ui.ArticleCard
 import com.personal.wanandroid.core.ui.ErrorContent
 import com.personal.wanandroid.core.ui.NetworkListPage
 import com.personal.wanandroid.core.ui.errorMessage

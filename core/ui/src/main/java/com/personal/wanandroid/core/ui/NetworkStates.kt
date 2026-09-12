@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.personal.wanandroid.core.designsystem.WanSpacing
 import com.personal.wanandroid.core.result.DataError
 
@@ -61,7 +62,8 @@ fun LoadMoreContent(
     error: DataError?,
     canLoadMore: Boolean,
     onRetry: () -> Unit,
-    endMessage: String
+    endMessage: String,
+    endTextAlign: TextAlign = TextAlign.Start
 ) {
     when {
         isLoading -> LoadingContent()
@@ -74,6 +76,7 @@ fun LoadMoreContent(
 
         !canLoadMore -> Text(
             text = endMessage,
+            textAlign = endTextAlign,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)

@@ -1,4 +1,7 @@
 <resources>
     <string name="topics">专题</string>
-    <string name="pending">工程骨架阶段：分类平铺契约已建立。左侧分类、右侧文章和分类独立状态待接入。</string>
+    <string name="topics_empty">暂无专题</string>
+    <string name="articles_empty">该专题暂无文章</string>
+    <string name="articles_end">本专题已经到底了</string>
+    <string name="subtopics_empty">该专题暂无二级分类</string>
 </resources>
