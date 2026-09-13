@@ -64,6 +64,8 @@ class NavigationDispatcher(
         if (rejection != null) return rejection
         val id = ids.next()
         val entry = when (destination) {
+            Destination.History -> HistoryRoute(id)
+
             Destination.Search -> SearchRoute(id)
 
             Destination.Questions -> DailyQuestionsRoute(id)
@@ -86,7 +88,9 @@ class NavigationDispatcher(
                 destination.title,
                 destination.articleId,
                 id,
-                destination.collectionRecordId
+                destination.collectionRecordId,
+                destination.collected,
+                destination.collectionSession
             )
         }
         requireNotNull(host).stack.add(entry)

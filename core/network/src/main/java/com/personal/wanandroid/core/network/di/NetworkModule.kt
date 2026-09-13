@@ -1,6 +1,10 @@
 package com.personal.wanandroid.core.network.di
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.personal.wanandroid.core.network.interceptor.CollectionTraceInterceptor
 import com.personal.wanandroid.core.network.interceptor.SessionInterceptor
 import com.personal.wanandroid.core.network.service.ArticleService
 import com.personal.wanandroid.core.network.service.AuthService
@@ -8,6 +12,7 @@ import com.personal.wanandroid.core.network.service.CollectionService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
@@ -26,6 +31,16 @@ object NetworkModule {
     // Fixed-origin session transport; no network body logging or WebView cookie sharing.
     @Provides
     @Singleton
+    fun provideClient(
+        sessionInterceptor: SessionInterceptor,
+        @ApplicationContext context: Context
+    ): OkHttpClient = client(sessionInterceptor).newBuilder().apply {
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            addInterceptor(CollectionTraceInterceptor { Log.d("CollectionTrace", it) })
+        }
+    }.build()
+
+    // Shared transport factory also used by fixed-response tests.
     fun client(sessionInterceptor: SessionInterceptor): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(sessionInterceptor)
         .retryOnConnectionFailure(false)

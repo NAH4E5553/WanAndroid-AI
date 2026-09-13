@@ -58,6 +58,7 @@ tasks.register("verifyArchitecture") {
                 }.map { it.path }.toSet() +
                     setOf(
                         ":core:data",
+                        ":core:model",
                         ":core:result",
                         ":core:navigation",
                         ":core:designsystem",

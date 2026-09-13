@@ -80,6 +80,7 @@ fun ProfileRoute(
     onLogin: () -> Unit,
     onThemeSettings: () -> Unit,
     onCollections: () -> Unit,
+    onHistory: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -94,6 +95,7 @@ fun ProfileRoute(
         onLogin = onLogin,
         onThemeSettings = onThemeSettings,
         onCollections = onCollections,
+        onHistory = onHistory,
         modifier = modifier
     )
 }
@@ -108,6 +110,7 @@ fun ProfileScreen(
     onLogin: () -> Unit,
     onThemeSettings: () -> Unit,
     onCollections: () -> Unit,
+    onHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -129,7 +132,7 @@ fun ProfileScreen(
         ) {
             AppListItem(title = stringResource(R.string.collections), onClick = onCollections)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            UnavailableRow(stringResource(R.string.history))
+            AppListItem(title = stringResource(R.string.history), onClick = onHistory)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             UnavailableRow(stringResource(R.string.offline))
         }

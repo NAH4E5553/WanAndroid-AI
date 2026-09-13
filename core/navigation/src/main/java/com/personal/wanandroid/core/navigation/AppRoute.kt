@@ -8,13 +8,16 @@ sealed interface Destination {
     data object Search : Destination
     data object Questions : Destination
     data object Login : Destination
+    data object History : Destination
     data object Collections : Destination
     data object ThemeSettings : Destination
     data class Article(
         val url: String,
         val title: String,
         val articleId: Long?,
-        val collectionRecordId: Long? = null
+        val collectionRecordId: Long? = null,
+        val collected: Boolean? = null,
+        val collectionSession: String? = null
     ) : Destination
 }
 
@@ -32,7 +35,9 @@ data class ArticleRoute(
     val title: String,
     val articleId: Long?,
     override val entryId: String,
-    val collectionRecordId: Long? = null
+    val collectionRecordId: Long? = null,
+    val collected: Boolean? = null,
+    val collectionSession: String? = null
 ) : AppRoute
 
 @Serializable
@@ -48,6 +53,9 @@ sealed interface PendingDestination {
     data class Collections(override val sourceEntryId: String, val accountId: Long? = null) :
         PendingDestination
 }
+
+@Serializable
+data class HistoryRoute(override val entryId: String) : AppRoute
 
 @Serializable
 data class CollectionsRoute(override val entryId: String) : AppRoute

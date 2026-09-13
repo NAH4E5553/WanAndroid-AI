@@ -1,7 +1,7 @@
 package com.personal.wanandroid.feature.article.state
 
 internal enum class ReaderFailure { UNSUPPORTED_URL, NETWORK, HTTP, TLS, TIMEOUT, RENDERER, UNSAFE }
-internal enum class ReaderNotice { BLOCKED_LINK, EXTERNAL_UNAVAILABLE }
+internal enum class ReaderNotice { BLOCKED_LINK, EXTERNAL_UNAVAILABLE, HISTORY_SAVE_FAILED }
 internal data class ReaderUiState(
     val url: String,
     val title: String,

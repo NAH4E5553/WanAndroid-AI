@@ -15,6 +15,20 @@ fun EntryProviderScope<NavKey>.profileGraph(
     dispatcher: NavigationDispatcher,
     host: NavigationHostToken
 ) {
+    entry<com.personal.wanandroid.core.navigation.HistoryRoute>(clazzContentKey = {
+        it.entryId
+    }) { route ->
+        val source = NavigationSource(host, route.entryId)
+        com.personal.wanandroid.feature.profile.view.HistoryRoute(
+            onBack = { dispatcher.back(source) },
+            onArticle = { item ->
+                dispatcher.navigateFrom(
+                    source,
+                    Destination.Article(item.url, item.title, item.articleId)
+                )
+            }
+        )
+    }
     entry<CollectionsKey>(clazzContentKey = {
         it.entryId
     }) { route ->
@@ -34,7 +48,9 @@ fun EntryProviderScope<NavKey>.profileGraph(
                         item.article.url,
                         item.article.title,
                         item.target.articleId,
-                        item.target.recordId
+                        item.target.recordId,
+                        collected = item.article.collected,
+                        collectionSession = item.article.collectionSession
                     )
                 )
             }

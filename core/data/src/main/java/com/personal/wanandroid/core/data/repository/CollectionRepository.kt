@@ -1,5 +1,6 @@
 package com.personal.wanandroid.core.data.repository
 
+import com.personal.wanandroid.core.data.mapper.normalizeArticleLink
 import com.personal.wanandroid.core.data.mapper.requestWithData
 import com.personal.wanandroid.core.data.mapper.requestWithoutData
 import com.personal.wanandroid.core.model.Article
@@ -29,6 +30,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 interface CollectionRepository {
     val state: Flow<CollectionSnapshot>
     fun current(): CollectionSnapshot
+
+    /** Captures account/write context before loading and merges only eligible collection values. */
+    suspend fun articlePage(
+        load: suspend () -> DataResult<PageResult<Article>>
+    ): DataResult<PageResult<Article>>
     suspend fun page(generation: Long, page: Int): DataResult<PageResult<CollectionItem>>
     suspend fun reconcile(generation: Long, target: CollectionTarget): DataResult<Unit>
     suspend fun setCollected(
@@ -53,8 +59,52 @@ class DefaultCollectionRepository @Inject constructor(
     override fun current(): CollectionSnapshot = synchronized(lock) {
         val session = sessions.state.value
         val generation = session.generation.takeIf { session.phase == SessionPhase.AUTHENTICATED }
-        if (cache.value.generation != generation) cache.value = CollectionSnapshot(generation)
+        if (cache.value.generation != generation) {
+            cache.value =
+                CollectionSnapshot(generation, sessionKey = sessions.authenticatedVersionKey())
+        }
         cache.value
+    }
+
+    override suspend fun articlePage(
+        load: suspend () -> DataResult<PageResult<Article>>
+    ): DataResult<PageResult<Article>> {
+        val tag = sessions.capture()
+        val version = synchronized(lock) { writeVersion }
+        val result = load()
+        currentCoroutineContext().ensureActive()
+        if (result is DataResult.Failure) return result
+        result as DataResult.Success
+        return synchronized(lock) {
+            val old = current()
+            if (!sessions.isCurrent(tag)) {
+                return@synchronized changed()
+            }
+            // Verification may complete while reading without changing the account generation.
+            val sessionKey = old.sessionKey
+            // Reuse the write epoch. Reads never advance it, and opening a reader never seeds it.
+            val accepted = old.generation != null && version == writeVersion
+            val updates = if (accepted) {
+                result.value.items.filter { !old.status(CollectionTarget(it.id)).busy }
+                    .associate { CollectionTarget(it.id).key to CollectionStatus(it.collected) }
+            } else {
+                emptyMap()
+            }
+            val next = old.copy(statuses = old.statuses + updates)
+            cache.value = next
+            DataResult.Success(
+                result.value.copy(
+                    items = result.value.items.map { article ->
+                        val known = next.status(CollectionTarget(article.id)).collected
+                        article.copy(
+                            collected = known ?: article.collected,
+                            // Unknown or invalidated results cannot seed a later reader.
+                            collectionSession = sessionKey.takeIf { known != null }
+                        )
+                    }
+                )
+            )
+        }
     }
 
     private fun request(generation: Long): SessionRequest? {
@@ -128,8 +178,13 @@ class DefaultCollectionRepository @Inject constructor(
                     CollectionItem(
                         target,
                         Article(
-                            dto.originId, dto.title, dto.link, dto.author.orEmpty(), "", "",
-                            dto.chapterName.orEmpty(), dto.niceDate.orEmpty(), true
+                            dto.originId, dto.title,
+                            normalizeArticleLink(
+                                dto.link
+                            ),
+                            dto.author.orEmpty(), "", "",
+                            dto.chapterName.orEmpty(), dto.niceDate.orEmpty(), true,
+                            sessions.authenticatedVersionKey().takeIf { isCurrent(tag) }
                         )
                     )
                 },

@@ -10,5 +10,6 @@ data class Article(
     val superChapterName: String,
     val chapter: String,
     val publishedAt: String,
-    val collected: Boolean
+    val collected: Boolean,
+    val collectionSession: String? = null
 )

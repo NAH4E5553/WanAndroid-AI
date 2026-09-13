@@ -33,9 +33,11 @@ class ArticleViewModelTest {
     @After fun after() {
         Dispatchers.resetMain()
     }
+    private val history = FakeReadingHistory()
     private fun model(saved: SavedStateHandle = SavedStateHandle(), target: String = url) =
         ArticleViewModel(
             saved,
+            history,
             ArticleRoute(url = target, title = "Fixture", articleId = 1L, entryId = "fixture")
         )
 
@@ -145,6 +147,40 @@ class ArticleViewModelTest {
         val next = vm.attachBrowser()
         vm.onBrowserEvent(next, ReaderEvent.Finished(url, "Recovered"))
         assertNull(vm.uiState.value.failure)
+    }
+
+    @Test fun onlySuccessfulCurrentPageIsRecordedOnceWithoutBorrowingOriginalId() = runTest(
+        dispatcher
+    ) {
+        val vm = model()
+        val id = vm.attachBrowser()
+        vm.onBrowserEvent(id, ReaderEvent.Finished(url, "Original"))
+        vm.onBrowserEvent(id, ReaderEvent.Finished(url, "Duplicate"))
+        runCurrent()
+        assertEquals(listOf(Triple(url, 1L, "Original")), history.records)
+        val next = "https://reader.invalid/next"
+        vm.onBrowserEvent(id, ReaderEvent.Started(next))
+        vm.onBrowserEvent(id, ReaderEvent.Finished(url, "Stale"))
+        vm.onBrowserEvent(id, ReaderEvent.Finished(next, "Next"))
+        runCurrent()
+        assertNull(history.records.last().second)
+        assertEquals(2, history.records.size)
+        vm.onBrowserEvent(id, ReaderEvent.Started(url))
+        vm.onBrowserEvent(id, ReaderEvent.Failed(url, ReaderFailure.HTTP))
+        vm.onBrowserEvent(id, ReaderEvent.Finished(url, "Error"))
+        runCurrent()
+        assertEquals(2, history.records.size)
+    }
+
+    @Test fun historyFailureDoesNotTurnSuccessfulReadingIntoFailure() = runTest(dispatcher) {
+        history.fail = true
+        val vm = model()
+        val id = vm.attachBrowser()
+        vm.onBrowserEvent(id, ReaderEvent.Finished(url, "Ready"))
+        runCurrent()
+        assertFalse(vm.uiState.value.loading)
+        assertNull(vm.uiState.value.failure)
+        assertEquals(ReaderNotice.HISTORY_SAVE_FAILED, vm.uiState.value.notice)
     }
 
     @Test fun invalidInitialUrlHasNoInertRetry() {

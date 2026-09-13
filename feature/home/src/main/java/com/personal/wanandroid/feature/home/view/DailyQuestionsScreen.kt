@@ -47,7 +47,7 @@ import com.personal.wanandroid.feature.home.viewmodel.DailyQuestionsViewModel
 @Composable
 fun DailyQuestionsRoute(
     onBack: () -> Unit,
-    onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
+    onArticleClick: (Article) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DailyQuestionsViewModel = hiltViewModel()
 ) {
@@ -55,7 +55,7 @@ fun DailyQuestionsRoute(
     DailyQuestionsScreen(
         uiState = uiState,
         onBack = onBack,
-        onArticleClick = { article -> onArticleClick(article.url, article.title, article.id) },
+        onArticleClick = onArticleClick,
         onRefresh = viewModel::refresh,
         onRetryInitialLoad = viewModel::retryInitialLoad,
         onLoadMore = viewModel::loadMore,

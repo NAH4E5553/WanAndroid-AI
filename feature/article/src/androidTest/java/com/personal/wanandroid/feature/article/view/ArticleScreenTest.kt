@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.personal.wanandroid.core.designsystem.theme.WanTheme
 import com.personal.wanandroid.core.model.CollectionStatus
+import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.feature.article.state.ReaderFailure
 import com.personal.wanandroid.feature.article.state.ReaderUiState
 import java.io.File
@@ -29,6 +30,101 @@ import org.junit.Test
 
 class ArticleScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun collectedListValueShowsRemoveWithoutACacheEntry() {
+        verifyListValueWithoutCache(true, "取消收藏", "收藏")
+    }
+
+    @Test fun uncollectedListValueShowsAddWithoutACacheEntry() {
+        verifyListValueWithoutCache(false, "收藏", "取消收藏")
+    }
+
+    @Test fun logoutShowsGuestActionEvenWhenTheUnchangedRouteSaysCollected() {
+        val loggedIn = mutableStateOf(true)
+        var loginRequests = 0
+        var writes = 0
+        compose.setContent {
+            WanTheme {
+                ArticleScreen(
+                    state = ReaderUiState("https://reader.invalid/", "Fixture"),
+                    onBack = {}, onRetry = {}, onOpenExternal = {},
+                    onDismissExternal = {}, onConfirmExternal = {}, onNoticeShown = {},
+                    initialCollected = true,
+                    collectionStatus = if (loggedIn.value) {
+                        CollectionStatus(
+                            true
+                        )
+                    } else {
+                        CollectionStatus()
+                    },
+                    authenticated = loggedIn.value,
+                    onCollection = { if (loggedIn.value) writes++ else loginRequests++ }
+                ) { Text("Unchanged article content") }
+            }
+        }
+        compose.onNodeWithContentDescription("更多操作").performClick()
+        compose.onNodeWithText("取消收藏").assertIsDisplayed()
+        compose.runOnIdle { loggedIn.value = false }
+        compose.onNodeWithText("取消收藏").assertDoesNotExist()
+        compose.onNodeWithText("收藏").performClick()
+        compose.onNodeWithText("Unchanged article content").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(1, loginRequests)
+            assertEquals(0, writes)
+        }
+    }
+
+    private fun verifyListValueWithoutCache(
+        initial: Boolean,
+        action: String,
+        updatedAction: String
+    ) {
+        val status = mutableStateOf(CollectionStatus())
+        val clicks = mutableListOf<Boolean>()
+        compose.setContent {
+            WanTheme {
+                ArticleScreen(
+                    state = ReaderUiState("https://reader.invalid/", "Fixture"),
+                    onBack = {}, onRetry = {}, onOpenExternal = {},
+                    onDismissExternal = {}, onConfirmExternal = {}, onNoticeShown = {},
+                    collectionStatus = status.value,
+                    initialCollected = initial,
+                    authenticated = true,
+                    onCollection = { displayed ->
+                        clicks.add(displayed)
+                        status.value = CollectionStatus(!displayed)
+                    }
+                ) { Text("Fixture content") }
+            }
+        }
+        compose.onNodeWithContentDescription("更多操作").performClick()
+        compose.onNodeWithText("确认收藏状态").assertDoesNotExist()
+        compose.onNodeWithText(action).performClick()
+        compose.runOnIdle { assertEquals(listOf(initial), clicks) }
+        compose.onNodeWithContentDescription("更多操作").performClick()
+        compose.onNodeWithText(updatedAction).assertIsDisplayed()
+        compose.onNodeWithText("确认收藏状态").assertDoesNotExist()
+    }
+
+    @Test fun explicitCollectionFailureIsLabelledAndKeepsWebContentVisible() {
+        compose.setContent {
+            WanTheme {
+                ArticleScreen(
+                    state = ReaderUiState("https://reader.invalid/", "Fixture"),
+                    onBack = {},
+                    onRetry = {},
+                    onOpenExternal = {},
+                    onDismissExternal = {},
+                    onConfirmExternal = {},
+                    onNoticeShown = {},
+                    collectionError = DataError.NETWORK
+                ) { Text("Fixture content") }
+            }
+        }
+        compose.onNodeWithText("收藏操作未完成：网络连接失败，请检查网络后重试。").assertIsDisplayed()
+        compose.onNodeWithText("Fixture content").assertIsDisplayed()
+        compose.onNodeWithText("网页加载失败，请检查网络后重试。").assertDoesNotExist()
+    }
 
     @Test fun failureRetryAndBackReachTheirOwnCallbacks() {
         var retries = 0

@@ -2,8 +2,10 @@ package com.personal.wanandroid.feature.article.view
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.ContextThemeWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -95,11 +97,35 @@ internal fun ArticleRoute(
             null
         }
     }
-    LaunchedEffect(target, collections.generation) {
-        val generation = collections.generation
-        if (target != null && generation != null) collectionViewModel.load(target, generation)
-    }
+    val initialCollected = article.collected.takeIf {
+        article.collectionSession != null && article.collectionSession == collections.sessionKey
+    } ?: false
+    val collectionStatus = target?.takeIf {
+        ReaderUrlPolicy.samePage(state.url, article.url)
+    }?.let(collections::status)
     val context = LocalContext.current
+    val trace = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    LaunchedEffect(article, collectionStatus, collections.generation, trace) {
+        if (trace) {
+            val source = when {
+                collections.generation == null -> "guest_rule"
+
+                collectionStatus?.collected != null -> "account_cache"
+
+                article.collectionSession != null &&
+                    article.collectionSession == collections.sessionKey -> "route_collect"
+
+                else -> "default"
+            }
+            Log.d(
+                "CollectionTrace",
+                "reader.state id=${article.articleId} routeCollect=${article.collected} " +
+                    "cacheCollect=${collectionStatus?.collected} " +
+                    "generation=${collections.generation} busy=${collectionStatus?.busy} " +
+                    "available=${collectionStatus != null} source=$source"
+            )
+        }
+    }
     val holder = remember { BrowserHolder() }
     val back = { navigateReaderBack(holder.view, onBack) }
     // Always intercept here; decide from the live browser when the gesture is dispatched.
@@ -125,18 +151,24 @@ internal fun ArticleRoute(
             }
         },
         viewModel::clearNotice,
-        collectionStatus = target?.takeIf {
-            ReaderUrlPolicy.samePage(state.url, article.url)
-        }?.let(collections::status),
+        collectionStatus = collectionStatus,
+        initialCollected = initialCollected,
         authenticated = collections.generation != null,
         canAddCollection = target?.articleId != null,
         collectionError = collectionError,
-        onCollection = {
+        onCollection = { displayedCollected ->
             val generation = collections.generation
+            if (trace) {
+                Log.d(
+                    "CollectionTrace",
+                    "reader.click id=${article.articleId} displayedCollect=$displayedCollected " +
+                        "generation=$generation action=${if (generation == null) "login" else "toggle"}"
+                )
+            }
             if (generation == null) {
                 onLogin()
             } else if (target != null) {
-                collectionViewModel.toggle(target, generation, collections.status(target).collected)
+                collectionViewModel.toggle(target, generation, displayedCollected)
             }
         }
     ) { modifier ->
@@ -264,26 +296,31 @@ internal fun ArticleScreen(
     onConfirmExternal: () -> Unit,
     onNoticeShown: () -> Unit,
     collectionStatus: CollectionStatus? = null,
+    initialCollected: Boolean = false,
     authenticated: Boolean = false,
     canAddCollection: Boolean = true,
     collectionError: DataError? = null,
-    onCollection: () -> Unit = {},
+    onCollection: (Boolean) -> Unit = {},
     webContent: @Composable (Modifier) -> Unit
 ) {
+    // Use the list value until an account-scoped operation supplies a newer known value.
+    val displayedCollection = collectionStatus?.let {
+        it.copy(collected = it.collected ?: initialCollected)
+    }
     val snackbar = remember { SnackbarHostState() }
     var menuExpanded by remember(state.url) { mutableStateOf(false) }
-    val collectionMessage = collectionError?.let { errorMessage(it) }
+    val collectionMessage = collectionError?.let {
+        stringResource(R.string.collection_operation_failed, errorMessage(it))
+    }
     LaunchedEffect(collectionMessage) {
         if (collectionMessage != null) snackbar.showSnackbar(collectionMessage)
     }
     val notice = state.notice?.let {
         stringResource(
-            if (it ==
-                ReaderNotice.BLOCKED_LINK
-            ) {
-                R.string.reader_blocked_link
-            } else {
-                R.string.reader_external_unavailable
+            when (it) {
+                ReaderNotice.BLOCKED_LINK -> R.string.reader_blocked_link
+                ReaderNotice.EXTERNAL_UNAVAILABLE -> R.string.reader_external_unavailable
+                ReaderNotice.HISTORY_SAVE_FAILED -> R.string.reader_history_save_failed
             }
         )
     }
@@ -337,13 +374,13 @@ internal fun ArticleScreen(
                                 }
                             )
                             ArticleCollectionAction(
-                                status = collectionStatus ?: CollectionStatus(false),
+                                status = displayedCollection ?: CollectionStatus(false),
                                 authenticated = authenticated,
                                 canAdd = canAddCollection,
                                 available = collectionStatus != null,
                                 onClick = {
                                     menuExpanded = false
-                                    onCollection()
+                                    onCollection(displayedCollection?.collected ?: initialCollected)
                                 }
                             )
                         }

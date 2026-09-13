@@ -1,5 +1,6 @@
 package com.personal.wanandroid.core.data.repository
 
+import com.personal.wanandroid.core.data.mapper.normalizeArticleLink
 import com.personal.wanandroid.core.data.mapper.requestWithData
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.model.PageResult
@@ -7,6 +8,7 @@ import com.personal.wanandroid.core.model.Topic
 import com.personal.wanandroid.core.network.datasource.ArticleNetworkDataSource
 import com.personal.wanandroid.core.network.dto.ArticleDto
 import com.personal.wanandroid.core.result.DataResult
+import com.personal.wanandroid.core.result.map
 import javax.inject.Inject
 
 interface ArticleRepository {
@@ -21,21 +23,25 @@ interface ArticleRepository {
     suspend fun search(page: Int, keyword: String): DataResult<PageResult<Article>>
 }
 
-class DefaultArticleRepository @Inject constructor(private val source: ArticleNetworkDataSource) :
-    ArticleRepository {
+class DefaultArticleRepository @Inject constructor(
+    private val source: ArticleNetworkDataSource,
+    private val collections: CollectionRepository
+) : ArticleRepository {
     override suspend fun articles(page: Int, categoryId: Long?): DataResult<PageResult<Article>> =
-        requestWithData({ source.articles(page, categoryId) }) { body ->
-            PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+        collections.articlePage {
+            requestWithData({ source.articles(page, categoryId) }) { body ->
+                PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+            }
         }
 
     override suspend fun questions(): DataResult<List<Article>> =
-        requestWithData({ source.questions(FIRST_QUESTION_PAGE) }) {
-            it.datas.take(HOME_QUESTION_LIMIT).map { dto -> dto.toArticle() }
-        }
+        questionPage(FIRST_QUESTION_PAGE).map { it.items.take(HOME_QUESTION_LIMIT) }
 
     override suspend fun questionPage(page: Int): DataResult<PageResult<Article>> =
-        requestWithData({ source.questions(page) }) { body ->
-            PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+        collections.articlePage {
+            requestWithData({ source.questions(page) }) { body ->
+                PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+            }
         }
 
     override suspend fun topics(): DataResult<List<Topic>> = requestWithData({
@@ -48,8 +54,10 @@ class DefaultArticleRepository @Inject constructor(private val source: ArticleNe
     }
 
     override suspend fun search(page: Int, keyword: String): DataResult<PageResult<Article>> =
-        requestWithData({ source.search(page, keyword) }) { body ->
-            PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+        collections.articlePage {
+            requestWithData({ source.search(page, keyword) }) { body ->
+                PageResult(body.datas.map { it.toArticle() }, if (body.over) null else page + 1)
+            }
         }
 
     private companion object {
@@ -61,7 +69,7 @@ class DefaultArticleRepository @Inject constructor(private val source: ArticleNe
 private fun ArticleDto.toArticle() = Article(
     id = id,
     title = title,
-    url = link,
+    url = normalizeArticleLink(link),
     author = author.orEmpty(),
     shareUser = shareUser.orEmpty(),
     superChapterName = superChapterName.orEmpty(),

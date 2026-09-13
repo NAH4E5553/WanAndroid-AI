@@ -66,7 +66,7 @@ class TopicsScreenTest {
                     if (show && selectedArticle == null) {
                         holder.SaveableStateProvider("topic-tab") {
                             TopicsRoute(
-                                onArticleClick = { _, _, id -> article.value = id },
+                                onArticleClick = { article.value = it.id },
                                 viewModel = vm,
                                 modifier = Modifier.safeDrawingPadding()
                             )

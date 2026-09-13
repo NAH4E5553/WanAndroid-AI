@@ -1,6 +1,8 @@
 package com.personal.wanandroid.core.data.repository
 
+import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.model.CollectionTarget
+import com.personal.wanandroid.core.model.PageResult
 import com.personal.wanandroid.core.network.datasource.CollectionNetworkDataSource
 import com.personal.wanandroid.core.network.dto.CollectionDto
 import com.personal.wanandroid.core.network.dto.UserDto
@@ -12,6 +14,7 @@ import com.personal.wanandroid.core.network.session.SessionStore
 import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.result.DataResult
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
@@ -96,6 +99,172 @@ class CollectionRepositoryTest {
         ) = write("record:$recordId:$articleId", false)
     }
 
+    private fun articlePage(collected: Boolean) = DataResult.Success(
+        PageResult(
+            listOf(
+                Article(42, "Fixture", "https://reader.invalid/", "", "", "", "", "", collected)
+            ),
+            null
+        )
+    )
+
+    @Test fun successfulArticleRefreshReplacesBothTrueAndFalseWithoutCollectionQueries() = runTest {
+        signIn()
+        repository.articlePage { articlePage(true) }
+        assertEquals(true, repository.current().status(internal).collected)
+        repository.articlePage { articlePage(false) }
+        assertEquals(false, repository.current().status(internal).collected)
+        repository.articlePage { articlePage(true) }
+        assertEquals(true, repository.current().status(internal).collected)
+        assertEquals(store.authenticatedVersionKey(), repository.current().sessionKey)
+        assertEquals(0, source.pageCalls)
+    }
+
+    @Test fun lateArticleReadCannotUndoCollectionAndNextReadCanUpdateCache() = runTest {
+        val generation = signIn()
+        repository.articlePage { articlePage(false) }
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                gate.await()
+                articlePage(false)
+            }
+        }
+        repository.setCollected(generation, internal, true)
+        gate.complete(Unit)
+        val returned = old.await() as DataResult.Success
+        assertEquals(true, returned.value.items.single().collected)
+        assertEquals(true, repository.current().status(internal).collected)
+        repository.articlePage { articlePage(false) }
+        assertEquals(false, repository.current().status(internal).collected)
+        assertEquals(0, source.pageCalls)
+    }
+
+    @Test fun lateCollectedReadCannotUndoRemoval() = runTest {
+        val generation = signIn()
+        repository.articlePage { articlePage(true) }
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                gate.await()
+                articlePage(true)
+            }
+        }
+        repository.setCollected(generation, internal, false)
+        gate.complete(Unit)
+        assertEquals(false, (old.await() as DataResult.Success).value.items.single().collected)
+        assertEquals(false, repository.current().status(internal).collected)
+        assertEquals(0, source.pageCalls)
+    }
+
+    @Test fun readsDuringAWriteCannotReplaceBusyOrCompletedState() = runTest {
+        val generation = signIn()
+        repository.articlePage { articlePage(false) }
+        source.writeGate = CompletableDeferred()
+        val writing = async { repository.setCollected(generation, internal, true) }
+        source.writeStarted.await()
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                gate.await()
+                articlePage(false)
+            }
+        }
+        val during = repository.articlePage { articlePage(false) } as DataResult.Success
+        assertNull(during.value.items.single().collectionSession)
+        assertTrue(repository.current().status(internal).busy)
+        assertNull(repository.current().status(internal).collected)
+        source.writeGate!!.complete(Unit)
+        writing.await()
+        gate.complete(Unit)
+        old.await()
+        assertEquals(true, repository.current().status(internal).collected)
+    }
+
+    @Test fun failedOrEmptyReadDoesNotEraseKnownState() = runTest {
+        signIn()
+        repository.articlePage { articlePage(true) }
+        assertEquals(
+            DataResult.Failure(DataError.NETWORK),
+            repository.articlePage {
+                DataResult.Failure(DataError.NETWORK)
+            }
+        )
+        repository.articlePage { DataResult.Success(PageResult(emptyList(), null)) }
+        assertEquals(true, repository.current().status(internal).collected)
+    }
+
+    @Test fun cancelledNonCooperativeReadCannotPublish() = runTest {
+        signIn()
+        repository.articlePage { articlePage(true) }
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                withContext(NonCancellable) { gate.await() }
+                articlePage(false)
+            }
+        }
+        old.cancel()
+        gate.complete(Unit)
+        try {
+            old.await()
+        } catch (_: CancellationException) { }
+        assertEquals(true, repository.current().status(internal).collected)
+    }
+
+    @Test fun accountChangeRejectsOldArticleResponseAndClearsOldCache() = runTest {
+        signIn()
+        repository.articlePage { articlePage(true) }
+        val oldSession = repository.current().sessionKey
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                gate.await()
+                articlePage(true)
+            }
+        }
+        signIn(8)
+        assertTrue(repository.current().statuses.isEmpty())
+        assertTrue(oldSession != repository.current().sessionKey)
+        repository.articlePage { articlePage(false) }
+        gate.complete(Unit)
+        assertEquals(DataResult.Failure(DataError.SESSION_CHANGED), old.await())
+        assertEquals(false, repository.current().status(internal).collected)
+    }
+
+    @Test fun verificationOfTheSameSessionDoesNotDiscardTheInitialArticlePage() = runTest {
+        signIn()
+        val tag = store.capture()
+        store.verificationFailed(tag)
+        val result = repository.articlePage {
+            assertTrue(store.verified(tag, UserDto(7, "fixture")))
+            articlePage(true)
+        } as DataResult.Success
+        assertEquals(store.authenticatedVersionKey(), result.value.items.single().collectionSession)
+        assertEquals(true, repository.current().status(internal).collected)
+    }
+
+    @Test fun uncertainWriteStaysUnknownUntilAFreshArticleResponse() = runTest {
+        val generation = signIn()
+        repository.articlePage { articlePage(false) }
+        val gate = CompletableDeferred<Unit>()
+        val old = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.articlePage {
+                gate.await()
+                articlePage(false)
+            }
+        }
+        source.writeError = IOException()
+        source.readError = IOException()
+        repository.setCollected(generation, internal, true)
+        gate.complete(Unit)
+        val stale = old.await() as DataResult.Success
+        assertNull(stale.value.items.single().collectionSession)
+        assertNull(repository.current().status(internal).collected)
+        repository.articlePage { articlePage(true) }
+        assertEquals(true, repository.current().status(internal).collected)
+    }
+
     @Test fun collectionAndArticleIdsRemainDistinctAndNullWriteDataSucceeds() = runTest {
         val generation = signIn()
         val page = repository.page(generation, 0) as DataResult.Success
@@ -104,6 +273,18 @@ class CollectionRepositoryTest {
         assertEquals(DataResult.Success(Unit), repository.setCollected(generation, internal, false))
         assertEquals(listOf("record:900:42"), source.writes)
         assertEquals(false, repository.current().status(CollectionTarget(42)).collected)
+    }
+
+    @Test fun relativeWeeklyLinkBecomesReadableWithoutChangingCollectionIdentity() = runTest {
+        val generation = signIn()
+        source.data = listOf(dto.copy(link = "/blog/show/123"))
+        val result = repository.page(generation, 0) as DataResult.Success
+        val item = result.value.items.single()
+        assertEquals("https://wanandroid.com/blog/show/123", item.article.url)
+        assertEquals(internal, item.target)
+        assertEquals(42L, item.article.id)
+        assertTrue(item.article.collected)
+        assertEquals(true, repository.current().status(internal).collected)
     }
 
     @Test fun externalRecordUsesMinusOneAndCannotBeReaddedAsInternalArticle() = runTest {

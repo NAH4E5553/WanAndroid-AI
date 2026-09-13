@@ -1,5 +1,7 @@
 package com.personal.wanandroid.feature.home.view
 
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +33,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -39,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
@@ -66,19 +70,51 @@ import kotlinx.coroutines.delay
 fun HomeRoute(
     onSearch: () -> Unit,
     onQuestionsClick: () -> Unit,
-    onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
+    onArticleClick: (Article) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val trace = LocalContext.current.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    if (trace) {
+        val instance = remember(viewModel) { System.identityHashCode(viewModel) }
+        DisposableEffect(viewModel) {
+            Log.d("CollectionTrace", "home.enter vm=$instance")
+            onDispose { Log.d("CollectionTrace", "home.leave vm=$instance") }
+        }
+        LaunchedEffect(uiState.articleState) {
+            Log.d(
+                "CollectionTrace",
+                "home.data vm=$instance dataset=${uiState.articleState.datasetGeneration} " +
+                    "count=${uiState.articles.size} initial=${uiState.isInitialLoading} " +
+                    "refresh=${uiState.isRefreshing} append=${uiState.isLoadingMore}"
+            )
+        }
+    }
     HomeScreen(
         uiState = uiState,
         onSearch = onSearch,
         onQuestionsClick = onQuestionsClick,
         onArticleClick = { article ->
-            onArticleClick(article.url, article.title, article.id)
+            if (trace) {
+                Log.d(
+                    "CollectionTrace",
+                    "home.open vm=${System.identityHashCode(viewModel)} id=${article.id} " +
+                        "listCollect=${article.collected} " +
+                        "hasSessionHint=${article.collectionSession != null}"
+                )
+            }
+            onArticleClick(article)
         },
-        onRefresh = viewModel::refresh,
+        onRefresh = {
+            if (trace) {
+                Log.d(
+                    "CollectionTrace",
+                    "home.refresh_gesture vm=${System.identityHashCode(viewModel)}"
+                )
+            }
+            viewModel.refresh()
+        },
         onRetryQuestions = viewModel::retryQuestions,
         onRetryInitialLoad = viewModel::retryInitialLoad,
         onLoadMore = viewModel::loadMore,
