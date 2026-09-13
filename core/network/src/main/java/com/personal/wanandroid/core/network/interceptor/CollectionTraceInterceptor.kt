@@ -44,10 +44,13 @@ internal class CollectionTraceInterceptor(private val log: (String) -> Unit) : I
             val rows = Json.parseToJsonElement(response.peekBody(1_048_576).string())
                 .jsonObject["data"]?.jsonObject?.get("datas")?.jsonArray.orEmpty()
             rows.forEach { row ->
-                val item = row.jsonObject
-                val uri = URI(item["link"]?.jsonPrimitive?.contentOrNull ?: return@forEach)
+                val item = runCatching { row.jsonObject }.getOrNull() ?: return@forEach
+                val uri = runCatching {
+                    URI(item["link"]?.jsonPrimitive?.contentOrNull ?: return@forEach)
+                }.getOrNull() ?: return@forEach
                 if (!Regex("/?blog/show/[0-9]+/?").matches(uri.rawPath.orEmpty())) return@forEach
-                val origin = item["originId"]?.jsonPrimitive?.longOrNull
+                val origin = runCatching { item["originId"]?.jsonPrimitive?.longOrNull }
+                    .getOrNull()
                 val scheme = when (uri.scheme?.lowercase()) {
                     null -> "none"
                     "http" -> "http"

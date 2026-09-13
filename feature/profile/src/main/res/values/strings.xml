@@ -47,6 +47,7 @@
     <string name="history_clear">清空</string>
     <string name="history_delete">删除记录</string>
     <string name="history_confirm">确认删除</string>
+    <string name="history_clear_hint">将删除本机全部阅读记录，不删除收藏和离线内容。</string>
     <string name="history_delete_hint">仅删除本机阅读记录，不删除收藏和离线内容。</string>
     <string name="history_local_hint">仅保存在本机；再次阅读需要网络。</string>
     <string name="history_empty">暂无阅读历史</string>

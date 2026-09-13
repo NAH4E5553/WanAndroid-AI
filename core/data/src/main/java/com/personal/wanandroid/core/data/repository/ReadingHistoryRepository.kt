@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface ReadingHistoryRepository {
+    /** Emits on subscription and after history invalidation, including same-size updates. */
     val changes: Flow<Unit>
     suspend fun page(page: Int): DataResult<PageResult<ReadingHistory>>
     suspend fun record(url: String, articleId: Long?, title: String): DataResult<Unit>

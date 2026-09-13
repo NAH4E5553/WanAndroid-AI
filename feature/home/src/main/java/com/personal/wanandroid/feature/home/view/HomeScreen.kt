@@ -76,13 +76,13 @@ fun HomeRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val trace = LocalContext.current.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-    val instance = remember(viewModel) { System.identityHashCode(viewModel) }
-    DisposableEffect(viewModel, trace) {
-        if (trace) Log.d("CollectionTrace", "home.enter vm=$instance")
-        onDispose { if (trace) Log.d("CollectionTrace", "home.leave vm=$instance") }
-    }
-    LaunchedEffect(uiState.articleState, trace) {
-        if (trace) {
+    if (trace) {
+        val instance = remember(viewModel) { System.identityHashCode(viewModel) }
+        DisposableEffect(viewModel) {
+            Log.d("CollectionTrace", "home.enter vm=$instance")
+            onDispose { Log.d("CollectionTrace", "home.leave vm=$instance") }
+        }
+        LaunchedEffect(uiState.articleState) {
             Log.d(
                 "CollectionTrace",
                 "home.data vm=$instance dataset=${uiState.articleState.datasetGeneration} " +
@@ -99,14 +99,20 @@ fun HomeRoute(
             if (trace) {
                 Log.d(
                     "CollectionTrace",
-                    "home.open vm=$instance id=${article.id} listCollect=${article.collected} " +
+                    "home.open vm=${System.identityHashCode(viewModel)} id=${article.id} " +
+                        "listCollect=${article.collected} " +
                         "hasSessionHint=${article.collectionSession != null}"
                 )
             }
             onArticleClick(article)
         },
         onRefresh = {
-            if (trace) Log.d("CollectionTrace", "home.refresh_gesture vm=$instance")
+            if (trace) {
+                Log.d(
+                    "CollectionTrace",
+                    "home.refresh_gesture vm=${System.identityHashCode(viewModel)}"
+                )
+            }
             viewModel.refresh()
         },
         onRetryQuestions = viewModel::retryQuestions,

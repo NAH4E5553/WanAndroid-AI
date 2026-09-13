@@ -33,7 +33,6 @@ class HistoryViewModel @Inject constructor(private val repository: ReadingHistor
     }
         .stateIn(viewModelScope, SharingStarted.Eagerly, HistoryUiState())
     init {
-        pager.startInitialLoad()
         observe()
     }
     private fun observe() {
@@ -55,7 +54,7 @@ class HistoryViewModel @Inject constructor(private val repository: ReadingHistor
         viewModelScope.launch {
             try {
                 when (val result = operation()) {
-                    is DataResult.Success -> pager.reset(Unit)
+                    is DataResult.Success -> Unit
 
                     is DataResult.Failure ->
                         actions.value =
@@ -68,11 +67,10 @@ class HistoryViewModel @Inject constructor(private val repository: ReadingHistor
     }
     fun refresh() {
         actions.value = actions.value.copy(error = null)
-        if (observer?.isActive != true) observe()
-        pager.refresh()
+        if (observer?.isActive != true) observe() else pager.refresh()
     }
-    fun retryInitial() = refresh()
-    fun retryRefresh() = refresh()
+    fun retryInitial() = pager.retryInitial()
+    fun retryRefresh() = pager.retryRefresh()
     fun retryAppend() = pager.retryAppend()
     fun loadMore() = pager.loadMore()
     fun continueAfterPause() = pager.continueAfterPause()

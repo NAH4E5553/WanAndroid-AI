@@ -31,7 +31,11 @@ class CollectionTraceInterceptorTest {
     @Test fun collectionDiagnosticsReportRelativeBlogShapeWithoutPrivateUrlContents() {
         val logs = mutableListOf<String>()
         val body = """
-            {"data":{"datas":[{
+            {"data":{"datas":[
+              {"originId":40,"link":"/bad URI"},
+              null,
+              {"link":{"invalid":"type"}},
+              {
               "originId":42,
               "title":"private title",
               "link":"/blog/show/123?secret=private-query#private-fragment"

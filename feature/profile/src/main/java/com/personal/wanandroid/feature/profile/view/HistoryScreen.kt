@@ -130,7 +130,17 @@ fun HistoryScreen(
                 val title = if (clearRequested) R.string.history_clear else R.string.history_delete
                 Text(stringResource(title))
             },
-            text = { Text(stringResource(R.string.history_delete_hint)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (clearRequested) {
+                            R.string.history_clear_hint
+                        } else {
+                            R.string.history_delete_hint
+                        }
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(enabled = !state.busy, onClick = {
                     if (clearRequested) onClear() else pendingDelete?.let(onDelete)

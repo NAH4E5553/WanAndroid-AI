@@ -9,6 +9,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -32,7 +34,13 @@ class HistoryViewModelTest {
 
     @After fun after() = Dispatchers.resetMain()
     private class Repository : ReadingHistoryRepository {
-        override val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val invalidations = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        var observationFails = false
+        override val changes = flow {
+            if (observationFails) error("fixture observation failure")
+            emit(Unit)
+            emitAll(invalidations)
+        }
         var rows = listOf(ReadingHistory("https://fixture.invalid", 1, "Fixture", 1))
         var calls = mutableListOf<Int>()
         var fail = false
@@ -67,6 +75,7 @@ class HistoryViewModelTest {
             gate?.await()
             if (fail) return DataResult.Failure(DataError.STORAGE)
             rows = rows.filterNot { it.url == url }
+            invalidations.emit(Unit)
             return DataResult.Success(Unit)
         }
         override suspend fun clear() = delete("https://fixture.invalid")
@@ -76,6 +85,7 @@ class HistoryViewModelTest {
         val repo = Repository()
         val vm = HistoryViewModel(repo)
         runCurrent()
+        assertEquals(listOf(0), repo.calls)
         vm.loadMore()
         runCurrent()
         vm.delete(repo.rows.single().url)
@@ -110,7 +120,7 @@ class HistoryViewModelTest {
         runCurrent()
         repo.rows = emptyList()
         repo.gate = null
-        repo.changes.emit(Unit)
+        repo.invalidations.emit(Unit)
         runCurrent()
         assertTrue(vm.uiState.value.page.items.isEmpty())
         assertNull(vm.uiState.value.page.nextPage)
@@ -126,5 +136,56 @@ class HistoryViewModelTest {
         vm.retryInitial()
         runCurrent()
         assertEquals(1, vm.uiState.value.page.items.size)
+    }
+
+    @Test fun clearInvalidationReloadsOnlyOnce() = runTest(dispatcher) {
+        val repo = Repository()
+        val vm = HistoryViewModel(repo)
+        runCurrent()
+        vm.clear()
+        runCurrent()
+        assertEquals(listOf(0, 0), repo.calls)
+        assertTrue(vm.uiState.value.page.items.isEmpty())
+    }
+
+    @Test fun retriesRequireMatchingFailureAndPreserveRefreshRows() = runTest(dispatcher) {
+        val repo = Repository()
+        val vm = HistoryViewModel(repo)
+        runCurrent()
+        vm.retryInitial()
+        vm.retryRefresh()
+        runCurrent()
+        assertEquals(listOf(0), repo.calls)
+        repo.fail = true
+        vm.refresh()
+        runCurrent()
+        assertEquals(DataError.STORAGE, vm.uiState.value.page.refreshError)
+        assertEquals(1, vm.uiState.value.page.items.size)
+        vm.retryInitial()
+        runCurrent()
+        assertEquals(listOf(0, 0), repo.calls)
+        repo.fail = false
+        vm.retryRefresh()
+        runCurrent()
+        assertEquals(listOf(0, 0, 0), repo.calls)
+        assertNull(vm.uiState.value.page.refreshError)
+    }
+
+    @Test fun refreshRestartsFailedObservationAndLoadsOnlyOnce() = runTest(dispatcher) {
+        val repo = Repository().apply { observationFails = true }
+        val vm = HistoryViewModel(repo)
+        runCurrent()
+        assertEquals(DataError.STORAGE, vm.uiState.value.error)
+        assertTrue(repo.calls.isEmpty())
+        repo.observationFails = false
+        vm.refresh()
+        runCurrent()
+        assertEquals(listOf(0), repo.calls)
+        assertNull(vm.uiState.value.error)
+        repo.rows = emptyList()
+        repo.invalidations.emit(Unit)
+        runCurrent()
+        assertEquals(listOf(0, 0), repo.calls)
+        assertTrue(vm.uiState.value.page.items.isEmpty())
     }
 }

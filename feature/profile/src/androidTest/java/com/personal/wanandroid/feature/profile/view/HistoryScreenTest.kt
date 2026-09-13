@@ -56,6 +56,7 @@ class HistoryScreenTest {
         capture("history-light.png")
         compose.onNodeWithText("本机阅读文章").performClick()
         compose.onNodeWithText("删除记录").performClick()
+        compose.onNodeWithText("仅删除本机阅读记录，不删除收藏和离线内容。").assertIsDisplayed()
         assertNull(deleted)
         compose.onNodeWithText("确认删除").performClick()
         compose.runOnIdle {
@@ -68,6 +69,7 @@ class HistoryScreenTest {
         var clears = 0
         show(clear = { clears++ })
         compose.onNodeWithText("清空").performClick()
+        compose.onNodeWithText("将删除本机全部阅读记录，不删除收藏和离线内容。").assertIsDisplayed()
         compose.onNodeWithText("取消").performClick()
         compose.runOnIdle { assertEquals(0, clears) }
         compose.onNodeWithText("清空").performClick()
