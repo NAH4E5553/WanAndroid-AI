@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.personal.wanandroid.core.network.interceptor.SessionInterceptor
 import com.personal.wanandroid.core.network.service.ArticleService
 import com.personal.wanandroid.core.network.service.AuthService
+import com.personal.wanandroid.core.network.service.CollectionService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,6 +46,10 @@ object NetworkModule {
 
     @Provides
     fun service(retrofit: Retrofit): ArticleService = retrofit.create(ArticleService::class.java)
+
+    @Provides
+    fun collectionService(retrofit: Retrofit): CollectionService =
+        retrofit.create(CollectionService::class.java)
 
     @Provides
     fun authService(retrofit: Retrofit): AuthService = retrofit.create(AuthService::class.java)

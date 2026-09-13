@@ -16,7 +16,7 @@ fun EntryProviderScope<NavKey>.authGraph(
         val source = NavigationSource(host, route.entryId)
         LoginRoute(
             onBack = { dispatcher.back(source) },
-            onLoggedIn = { dispatcher.back(source) }
+            onLoggedIn = { dispatcher.completeLogin(source) }
         )
     }
 }

@@ -68,6 +68,7 @@ fun AppNavigation(dispatcher: NavigationDispatcher) {
                         dispatcher.navigateFrom(source, Destination.Article(url, title, id))
                     },
                     onLogin = { dispatcher.navigateFrom(source, Destination.Login) },
+                    onCollections = { dispatcher.navigateFrom(source, Destination.Collections) },
                     onThemeSettings = { dispatcher.navigateFrom(source, Destination.ThemeSettings) }
                 )
             }
@@ -85,6 +86,7 @@ private fun MainTabs(
     onQuestionsClick: () -> Unit,
     onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
     onLogin: () -> Unit,
+    onCollections: () -> Unit,
     onThemeSettings: () -> Unit
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -120,6 +122,7 @@ private fun MainTabs(
 
                 2 -> ProfileRoute(
                     onLogin = onLogin,
+                    onCollections = onCollections,
                     onThemeSettings = onThemeSettings,
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )

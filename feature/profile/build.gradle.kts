@@ -1,5 +1,6 @@
 plugins { id("wan.android.feature") }
 dependencies {
+    implementation(projects.core.common)
     implementation(projects.core.result)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.test.junit4)
