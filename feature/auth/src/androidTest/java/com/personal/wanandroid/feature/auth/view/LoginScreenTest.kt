@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.navigation3.runtime.NavKey
 import androidx.test.platform.app.InstrumentationRegistry
 import com.personal.wanandroid.core.data.repository.AuthRepository
+import com.personal.wanandroid.core.data.repository.LogoutResult
 import com.personal.wanandroid.core.designsystem.theme.WanTheme
 import com.personal.wanandroid.core.model.auth.AuthSession
 import com.personal.wanandroid.core.model.auth.AuthStatus
@@ -70,7 +71,7 @@ class LoginScreenTest {
             }
         }
         override suspend fun restore() = DataResult.Success(Unit)
-        override suspend fun logout() = DataResult.Success(Unit)
+        override suspend fun logout() = LogoutResult(null, DataResult.Success(Unit))
     }
 
     @Test fun inputDoesNotLoginUntilExplicitSubmitAndBusyDisablesButton() {

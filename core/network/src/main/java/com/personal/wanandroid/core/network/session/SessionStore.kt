@@ -72,9 +72,9 @@ class SessionStore(private val storage: SessionStorage, private val now: () -> L
     fun detach(): SessionRequest {
         initialize()
         val old = cookies
-        val generation = mutableState.value.generation
         if (!clearLocked(SessionNotice.NONE)) throw SessionStorageException()
-        return SessionRequest(generation, SessionRequest.Mode.LOGOUT, old)
+        // This identity belongs to the state created by detach, not the removed account.
+        return SessionRequest(mutableState.value.generation, SessionRequest.Mode.LOGOUT, old)
     }
 
     @Synchronized
@@ -90,7 +90,7 @@ class SessionStore(private val storage: SessionStorage, private val now: () -> L
             SessionRequest.Mode.LOGOUT -> request.logoutCookies
 
             SessionRequest.Mode.NORMAL -> {
-                if (!isCurrent(request)) throw IOException("Session changed")
+                if (!isCurrent(request)) throw SessionChangedException()
                 cookies
             }
         }

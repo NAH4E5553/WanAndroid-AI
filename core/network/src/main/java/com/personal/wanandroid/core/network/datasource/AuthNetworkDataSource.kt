@@ -33,7 +33,7 @@ class RetrofitAuthDataSource @Inject constructor(
         if (!response.isSuccessful) throw HttpException(response)
         val body = requireNotNull(response.body())
         val cookies = Cookie.parseAll(
-            requireNotNull(SessionStore.API.resolve("user/login")),
+            response.raw().request.url,
             response.headers()
         )
         return LoginResponse(body) { user -> sessions.commitLogin(session, user, cookies) }

@@ -1,6 +1,7 @@
 package com.personal.wanandroid.feature.auth.viewmodel
 
 import com.personal.wanandroid.core.data.repository.AuthRepository
+import com.personal.wanandroid.core.data.repository.LogoutResult
 import com.personal.wanandroid.core.model.auth.AuthSession
 import com.personal.wanandroid.core.model.auth.AuthStatus
 import com.personal.wanandroid.core.result.DataError
@@ -40,7 +41,7 @@ class LoginViewModelTest {
             calls++
             return result.await()
         }
-        override suspend fun logout() = DataResult.Success(Unit)
+        override suspend fun logout() = LogoutResult(null, DataResult.Success(Unit))
         override suspend fun restore() = DataResult.Success(Unit)
     }
     private fun fill(vm: LoginViewModel) {

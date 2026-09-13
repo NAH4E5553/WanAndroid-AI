@@ -4,6 +4,7 @@ import com.personal.wanandroid.core.data.model.ThemePreferences
 import com.personal.wanandroid.core.data.model.ThemePreferencesState
 import com.personal.wanandroid.core.data.model.ThemeUpdateResult
 import com.personal.wanandroid.core.data.repository.AuthRepository
+import com.personal.wanandroid.core.data.repository.LogoutResult
 import com.personal.wanandroid.core.data.repository.ThemePreferencesRepository
 import com.personal.wanandroid.core.model.auth.AuthSession
 import com.personal.wanandroid.core.model.auth.AuthStatus
@@ -43,10 +44,12 @@ class ProfileViewModelTest {
             MutableStateFlow(AuthSession(AuthStatus.AUTHENTICATED, generation = 3))
         val result = CompletableDeferred<DataResult<Unit>>()
         var calls = 0
-        override suspend fun logout(): DataResult<Unit> {
+        var detachedGeneration = 4L
+        override suspend fun logout(): LogoutResult {
             calls++
-            session.value = AuthSession(AuthStatus.GUEST, generation = 4)
-            return result.await()
+            val generation = detachedGeneration
+            session.value = AuthSession(AuthStatus.GUEST, generation = generation)
+            return LogoutResult(generation, result.await())
         }
         override suspend fun login(username: String, password: String) = DataResult.Success(Unit)
         override suspend fun restore() = DataResult.Success(Unit)
@@ -58,7 +61,7 @@ class ProfileViewModelTest {
 
     @Test fun duplicateLogoutIsIgnoredAndNetworkFailureStaysVisibleForThatSession() =
         runTest(dispatcher) {
-            val auth = Auth()
+            val auth = Auth().apply { detachedGeneration = 9 }
             val vm = ProfileViewModel(Themes(), auth)
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 vm.accountState.collect {}

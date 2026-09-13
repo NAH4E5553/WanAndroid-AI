@@ -8,6 +8,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -43,5 +45,33 @@ class EncryptedSessionStorageTest {
         assertEquals(SessionNotice.STORAGE_ERROR, store.initialize().notice)
         assertNull(store.state.value.user)
         assertNull(storage.read())
+    }
+
+    @Test fun backupOnlyFileIsRecoveredWithExistingKey() {
+        storage.write("fixture-session")
+        val backup = File(file.path + ".bak")
+        assertTrue(file.renameTo(backup))
+        assertEquals("fixture-session", storage.read())
+        assertFalse(backup.exists())
+    }
+
+    @Test fun orphanedBackupWithoutKeyIsClearedDuringInitialization() {
+        storage.write("fixture-session")
+        val encrypted = file.readBytes()
+        storage.write(null)
+        val backup = File(file.path + ".bak")
+        backup.writeBytes(encrypted)
+        val store = SessionStore(storage)
+        assertEquals(SessionNotice.STORAGE_ERROR, store.initialize().notice)
+        assertNull(storage.read())
+        assertFalse(backup.exists())
+        storage.write("fresh-fixture")
+        assertEquals("fresh-fixture", storage.read())
+    }
+
+    @Test fun oversizedWritePreservesPreviousEncryptedPayload() {
+        storage.write("fixture-session")
+        assertThrows(IllegalArgumentException::class.java) { storage.write("x".repeat(262_144)) }
+        assertEquals("fixture-session", storage.read())
     }
 }

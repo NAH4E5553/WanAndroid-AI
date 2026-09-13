@@ -204,7 +204,7 @@ private fun AccountCard(
             title = { Text(stringResource(R.string.logout_confirm_title)) },
             text = { Text(stringResource(R.string.logout_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.testTag("logout_confirm"), onClick = {
                     confirmLogout = false
                     onLogout()
                 }) { Text(stringResource(R.string.logout)) }

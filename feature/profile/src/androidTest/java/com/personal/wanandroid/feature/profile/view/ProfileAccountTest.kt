@@ -2,8 +2,7 @@ package com.personal.wanandroid.feature.profile.view
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.personal.wanandroid.core.data.model.ThemePalettePreference
@@ -60,8 +59,10 @@ class ProfileAccountTest {
         compose.onNodeWithText("退出登录").performClick()
         compose.runOnIdle { assertEquals(0, clicks) }
         compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithTag("logout_confirm").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(0, clicks) }
         compose.onNodeWithText("退出登录").performClick()
-        compose.onAllNodesWithText("退出登录").onLast().performClick()
+        compose.onNodeWithTag("logout_confirm").performClick()
         compose.runOnIdle { assertEquals(1, clicks) }
     }
 

@@ -1,6 +1,7 @@
 package com.personal.wanandroid.core.data.mapper
 
 import com.personal.wanandroid.core.network.dto.WanResponse
+import com.personal.wanandroid.core.network.session.SessionChangedException
 import com.personal.wanandroid.core.network.session.SessionStorageException
 import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.result.DataResult
@@ -24,6 +25,8 @@ internal suspend fun <T : Any, R> requestWithData(
     throw cancelled
 } catch (_: SessionStorageException) {
     DataResult.Failure(DataError.STORAGE)
+} catch (_: SessionChangedException) {
+    DataResult.Failure(DataError.SESSION_CHANGED)
 } catch (_: IOException) {
     DataResult.Failure(DataError.NETWORK)
 } catch (_: Exception) {

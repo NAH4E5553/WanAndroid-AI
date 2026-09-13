@@ -7,6 +7,7 @@ import com.personal.wanandroid.core.model.auth.AuthNotice
 import com.personal.wanandroid.core.model.auth.AuthSession
 import com.personal.wanandroid.core.model.auth.AuthStatus
 import com.personal.wanandroid.core.network.datasource.AuthNetworkDataSource
+import com.personal.wanandroid.core.network.session.SessionChangedException
 import com.personal.wanandroid.core.network.session.SessionNotice
 import com.personal.wanandroid.core.network.session.SessionPhase
 import com.personal.wanandroid.core.network.session.SessionRequest
@@ -26,11 +27,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+/** generation is captured by detach; null means cleanup failed, reported through session.notice. */
+data class LogoutResult(val generation: Long?, val result: DataResult<Unit>)
+
 interface AuthRepository {
     val session: Flow<AuthSession>
     suspend fun restore(): DataResult<Unit>
     suspend fun login(username: String, password: String): DataResult<Unit>
-    suspend fun logout(): DataResult<Unit>
+    suspend fun logout(): LogoutResult
 }
 
 internal class DefaultAuthRepository @Inject constructor(
@@ -70,7 +74,7 @@ internal class DefaultAuthRepository @Inject constructor(
                 val coroutineContext = currentCoroutineContext()
                 val result = requestWithData({ source.userInfo(request) }) { body ->
                     coroutineContext.ensureActive()
-                    check(sessions.verified(request, body.userInfo))
+                    if (!sessions.verified(request, body.userInfo)) throw SessionChangedException()
                 }
                 when (result) {
                     is DataResult.Success -> DataResult.Success(Unit)
@@ -105,7 +109,7 @@ internal class DefaultAuthRepository @Inject constructor(
                     val response = source.login(username.trim(), password, context)
                     currentCoroutineContext().ensureActive()
                     val result = requestWithData({ response.body }) { user ->
-                        check(response.commit(user))
+                        if (!response.commit(user)) throw SessionChangedException()
                         Unit
                     }
                     if (result is DataResult.Failure) sessions.abortLogin(context)
@@ -114,6 +118,9 @@ internal class DefaultAuthRepository @Inject constructor(
                     throw cancelled
                 } catch (_: SessionStorageException) {
                     DataResult.Failure(DataError.STORAGE)
+                } catch (_: SessionChangedException) {
+                    request?.let(sessions::abortLogin)
+                    DataResult.Failure(DataError.SESSION_CHANGED)
                 } catch (_: java.io.IOException) {
                     request?.let(sessions::abortLogin)
                     DataResult.Failure(DataError.NETWORK)
@@ -129,13 +136,13 @@ internal class DefaultAuthRepository @Inject constructor(
         }
     }
 
-    override suspend fun logout(): DataResult<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun logout(): LogoutResult = withContext(Dispatchers.IO) {
         val detached = try {
             sessions.detach()
         } catch (_: SessionStorageException) {
-            return@withContext DataResult.Failure(DataError.STORAGE)
+            return@withContext LogoutResult(null, DataResult.Failure(DataError.STORAGE))
         }
         // No automatic retries: this request carries only the detached account's cookies.
-        requestWithoutData { source.logout(detached) }
+        LogoutResult(detached.generation, requestWithoutData { source.logout(detached) })
     }
 }

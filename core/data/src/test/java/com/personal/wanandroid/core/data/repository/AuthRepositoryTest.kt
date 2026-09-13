@@ -125,15 +125,18 @@ class AuthRepositoryTest {
         source.starts.receive()
         assertEquals(SessionPhase.GUEST, store.state.value.phase)
         assertNull(memory.payload)
+        val detachedGeneration = store.state.value.generation
         source.logoutGate!!.complete(Unit)
-        assertEquals(DataResult.Failure(DataError.NETWORK), logout.await())
+        val result = logout.await()
+        assertEquals(detachedGeneration, result.generation)
+        assertEquals(DataResult.Failure(DataError.NETWORK), result.result)
     }
 
     @Test fun noBodyLogoutSuccessIsAcceptedButBusinessFailureIsNot() = runTest {
         signIn()
-        assertEquals(DataResult.Success(Unit), repository.logout())
+        assertEquals(DataResult.Success(Unit), repository.logout().result)
         source.logoutBody = WanResponse(-1)
-        assertEquals(DataResult.Failure(DataError.SERVICE), repository.logout())
+        assertEquals(DataResult.Failure(DataError.SERVICE), repository.logout().result)
     }
 
     @Test fun offlineRestoreRetainsCredentialsWithoutClaimingVerifiedLogin() = runTest {
@@ -171,7 +174,7 @@ class AuthRepositoryTest {
         source.starts.receive()
         repository.logout()
         source.loginGate!!.complete(Unit)
-        assertTrue(login.await() is DataResult.Failure)
+        assertEquals(DataResult.Failure(DataError.SESSION_CHANGED), login.await())
         assertEquals(SessionPhase.GUEST, store.state.value.phase)
     }
 
@@ -193,5 +196,16 @@ class AuthRepositoryTest {
         assertTrue(call.isCancelled)
         assertEquals(SessionPhase.GUEST, store.state.value.phase)
         assertNull(memory.payload)
+    }
+
+    @Test fun mismatchedRestoredIdentityReportsSessionChange() = runTest {
+        signIn()
+        source.verifyBody = WanResponse(0, data = UserInfoDto(UserDto(8, "another-fixture")))
+        val restored = SessionStore(memory) { 1_000 }
+        assertEquals(
+            DataResult.Failure(DataError.SESSION_CHANGED),
+            DefaultAuthRepository(source, restored).restore()
+        )
+        assertEquals(SessionPhase.GUEST, restored.state.value.phase)
     }
 }

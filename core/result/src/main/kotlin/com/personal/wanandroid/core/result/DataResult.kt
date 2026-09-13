@@ -5,7 +5,14 @@ sealed interface DataResult<out T> {
     data class Failure(val reason: DataError) : DataResult<Nothing>
 }
 
-enum class DataError { NETWORK, SERVICE, SESSION_EXPIRED, INVALID_RESPONSE, STORAGE }
+enum class DataError {
+    NETWORK,
+    SERVICE,
+    SESSION_EXPIRED,
+    SESSION_CHANGED,
+    INVALID_RESPONSE,
+    STORAGE
+}
 
 /** Transform only successful values; cancellation and transform exceptions propagate. */
 inline fun <T, R> DataResult<T>.map(transform: (T) -> R): DataResult<R> = when (this) {

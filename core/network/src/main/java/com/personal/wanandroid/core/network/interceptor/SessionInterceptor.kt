@@ -1,5 +1,6 @@
 package com.personal.wanandroid.core.network.interceptor
 
+import com.personal.wanandroid.core.network.session.SessionChangedException
 import com.personal.wanandroid.core.network.session.SessionRequest
 import com.personal.wanandroid.core.network.session.SessionStore
 import java.io.IOException
@@ -25,7 +26,7 @@ class SessionInterceptor @Inject constructor(private val sessions: SessionStore)
         val response = chain.proceed(request)
         try {
             if (context.mode == SessionRequest.Mode.NORMAL) {
-                if (!sessions.isCurrent(context)) throw IOException("Session changed")
+                if (!sessions.isCurrent(context)) throw SessionChangedException()
                 val expired = response.code == 401 || runCatching {
                     Json.parseToJsonElement(response.peekBody(1_048_576).string())
                         .jsonObject["errorCode"]?.jsonPrimitive?.intOrNull == -1001

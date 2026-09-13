@@ -91,6 +91,7 @@ fun errorMessage(error: DataError): String = stringResource(
         DataError.NETWORK -> R.string.error_network
         DataError.SERVICE -> R.string.error_service
         DataError.SESSION_EXPIRED -> R.string.error_session_expired
+        DataError.SESSION_CHANGED -> R.string.error_session_changed
         DataError.INVALID_RESPONSE -> R.string.error_invalid_response
         DataError.STORAGE -> R.string.error_storage
     }
