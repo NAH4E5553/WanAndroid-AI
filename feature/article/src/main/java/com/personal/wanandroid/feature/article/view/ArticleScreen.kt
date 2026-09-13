@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -25,13 +29,16 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
@@ -40,11 +47,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personal.wanandroid.core.model.CollectionStatus
+import com.personal.wanandroid.core.model.CollectionTarget
 import com.personal.wanandroid.core.navigation.ArticleRoute as ArticleKey
+import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.ui.component.network.ErrorContent
 import com.personal.wanandroid.core.ui.component.network.MessageCard
+import com.personal.wanandroid.core.ui.component.network.errorMessage
 import com.personal.wanandroid.core.ui.component.scaffold.AppScaffold
 import com.personal.wanandroid.feature.article.R
+import com.personal.wanandroid.feature.article.component.ArticleCollectionAction
 import com.personal.wanandroid.feature.article.component.ReaderChromeClient
 import com.personal.wanandroid.feature.article.component.ReaderWebView
 import com.personal.wanandroid.feature.article.component.ReaderWebViewClient
@@ -54,17 +66,39 @@ import com.personal.wanandroid.feature.article.state.ReaderEvent
 import com.personal.wanandroid.feature.article.state.ReaderFailure
 import com.personal.wanandroid.feature.article.state.ReaderNotice
 import com.personal.wanandroid.feature.article.state.ReaderUiState
+import com.personal.wanandroid.feature.article.viewmodel.ArticleCollectionViewModel
 import com.personal.wanandroid.feature.article.viewmodel.ArticleViewModel
 
 @Composable
 internal fun ArticleRoute(
     article: ArticleKey,
     onBack: () -> Unit,
+    onLogin: () -> Unit,
+    collectionViewModel: ArticleCollectionViewModel = hiltViewModel(),
     viewModel: ArticleViewModel = hiltViewModel<ArticleViewModel, ArticleViewModel.Factory>(
         creationCallback = { it.create(article) }
     )
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val collections by collectionViewModel.collections.collectAsStateWithLifecycle()
+    val collectionError by collectionViewModel.error.collectAsStateWithLifecycle()
+    val target = remember(article) {
+        if (article.articleId != null ||
+            article.collectionRecordId != null
+        ) {
+            CollectionTarget(
+                article.articleId,
+                // A re-collection creates a new record; internal readers always use origin ID.
+                article.collectionRecordId.takeIf { article.articleId == null }
+            )
+        } else {
+            null
+        }
+    }
+    LaunchedEffect(target, collections.generation) {
+        val generation = collections.generation
+        if (target != null && generation != null) collectionViewModel.load(target, generation)
+    }
     val context = LocalContext.current
     val holder = remember { BrowserHolder() }
     val back = { navigateReaderBack(holder.view, onBack) }
@@ -90,7 +124,21 @@ internal fun ArticleRoute(
                 }
             }
         },
-        viewModel::clearNotice
+        viewModel::clearNotice,
+        collectionStatus = target?.takeIf {
+            ReaderUrlPolicy.samePage(state.url, article.url)
+        }?.let(collections::status),
+        authenticated = collections.generation != null,
+        canAddCollection = target?.articleId != null,
+        collectionError = collectionError,
+        onCollection = {
+            val generation = collections.generation
+            if (generation == null) {
+                onLogin()
+            } else if (target != null) {
+                collectionViewModel.toggle(target, generation, collections.status(target).collected)
+            }
+        }
     ) { modifier ->
         ReaderWebContent(
             state,
@@ -215,9 +263,19 @@ internal fun ArticleScreen(
     onDismissExternal: () -> Unit,
     onConfirmExternal: () -> Unit,
     onNoticeShown: () -> Unit,
+    collectionStatus: CollectionStatus? = null,
+    authenticated: Boolean = false,
+    canAddCollection: Boolean = true,
+    collectionError: DataError? = null,
+    onCollection: () -> Unit = {},
     webContent: @Composable (Modifier) -> Unit
 ) {
     val snackbar = remember { SnackbarHostState() }
+    var menuExpanded by remember(state.url) { mutableStateOf(false) }
+    val collectionMessage = collectionError?.let { errorMessage(it) }
+    LaunchedEffect(collectionMessage) {
+        if (collectionMessage != null) snackbar.showSnackbar(collectionMessage)
+    }
     val notice = state.notice?.let {
         stringResource(
             if (it ==
@@ -251,18 +309,43 @@ internal fun ArticleScreen(
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 },
                 actions = {
-                    if (ReaderUrlPolicy.inAppUrl(state.url) !=
-                        null
-                    ) {
-                        TextButton(onClick = onRetry) {
-                            Text(stringResource(R.string.reader_refresh))
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_more_vert),
+                                contentDescription = stringResource(R.string.reader_more_actions)
+                            )
                         }
-                    }
-                    if (ReaderUrlPolicy.externalUrl(state.url) !=
-                        null
-                    ) {
-                        TextButton(onClick = onOpenExternal) {
-                            Text(stringResource(R.string.reader_external))
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.reader_refresh)) },
+                                enabled = ReaderUrlPolicy.inAppUrl(state.url) != null,
+                                onClick = {
+                                    menuExpanded = false
+                                    onRetry()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.reader_external)) },
+                                enabled = ReaderUrlPolicy.externalUrl(state.url) != null,
+                                onClick = {
+                                    menuExpanded = false
+                                    onOpenExternal()
+                                }
+                            )
+                            ArticleCollectionAction(
+                                status = collectionStatus ?: CollectionStatus(false),
+                                authenticated = authenticated,
+                                canAdd = canAddCollection,
+                                available = collectionStatus != null,
+                                onClick = {
+                                    menuExpanded = false
+                                    onCollection()
+                                }
+                            )
                         }
                     }
                 }

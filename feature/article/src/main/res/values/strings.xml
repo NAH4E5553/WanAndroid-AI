@@ -1,6 +1,7 @@
 <resources>
     <string name="back">返回</string>
     <string name="reader_title">文章阅读</string>
+    <string name="reader_more_actions">更多操作</string>
     <string name="reader_refresh">刷新</string>
     <string name="reader_external">外部打开</string>
     <string name="reader_external_title">在其他应用中打开？</string>
@@ -16,4 +17,12 @@
     <string name="reader_unsafe">已停止加载不安全的网页。</string>
     <string name="reader_blocked_link">已阻止不支持的链接、自动外部跳转或下载。</string>
     <string name="reader_external_unavailable">没有可用的应用打开此链接。</string>
+    <string name="collection_add">收藏</string>
+    <string name="collection_remove">取消收藏</string>
+    <string name="collection_removed">已取消收藏</string>
+    <string name="collection_busy">处理中…</string>
+    <string name="collection_verify">确认收藏状态</string>
+    <string name="collections_login_required">请登录后查看收藏</string>
+    <string name="collections_empty">还没有收藏，阅读文章时可以添加收藏</string>
+    <string name="collections_end">已经到底了</string>
 </resources>

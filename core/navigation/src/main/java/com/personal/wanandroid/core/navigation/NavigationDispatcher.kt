@@ -18,7 +18,8 @@ enum class NavigationOutcome {
     REJECTED_NO_HOST,
     REJECTED_STALE_HOST,
     REJECTED_STALE_SOURCE,
-    REJECTED_ROOT
+    REJECTED_ROOT,
+    REJECTED_UNAUTHENTICATED
 }
 
 /**
@@ -28,11 +29,13 @@ enum class NavigationOutcome {
 @Singleton
 class NavigationDispatcher(
     private val ids: NavEntryIdGenerator,
-    private val assertMainThread: () -> Unit
+    private val assertMainThread: () -> Unit,
+    private val auth: AuthStateReader = AuthStateReader { null }
 ) {
-    @Inject constructor() : this(
+    @Inject constructor(auth: AuthStateReader) : this(
         NavEntryIdGenerator { UUID.randomUUID().toString() },
-        { check(Looper.myLooper() == Looper.getMainLooper()) { "Navigation must run on Main" } }
+        { check(Looper.myLooper() == Looper.getMainLooper()) { "Navigation must run on Main" } },
+        auth
     )
     private data class Host(val token: NavigationHostToken, val stack: MutableList<NavKey>)
     private var host: Host? = null
@@ -67,16 +70,49 @@ class NavigationDispatcher(
 
             Destination.Login -> LoginRoute(id)
 
+            Destination.Collections -> if (auth.authenticatedAccountId() != null) {
+                CollectionsRoute(id)
+            } else {
+                LoginRoute(
+                    id,
+                    PendingDestination.Collections(source.entryId, auth.knownAccountId())
+                )
+            }
+
             Destination.ThemeSettings -> ThemeSettingsRoute(id)
 
             is Destination.Article -> ArticleRoute(
                 destination.url,
                 destination.title,
                 destination.articleId,
-                id
+                id,
+                destination.collectionRecordId
             )
         }
         requireNotNull(host).stack.add(entry)
+        return NavigationOutcome.ACCEPTED
+    }
+
+    fun completeLogin(source: NavigationSource): NavigationOutcome {
+        assertMainThread()
+        rejection(source)?.let { return it }
+        val stack = requireNotNull(host).stack
+        val login =
+            stack.lastOrNull() as? LoginRoute ?: return NavigationOutcome.REJECTED_STALE_SOURCE
+        if (auth.authenticatedAccountId() == null) return NavigationOutcome.REJECTED_UNAUTHENTICATED
+        if (!stack.popIfCurrent(source.entryId)) return NavigationOutcome.REJECTED_ROOT
+        val pending = login.pending
+        if (pending != null &&
+            (stack.lastOrNull() as? AppRoute)?.entryId == pending.sourceEntryId
+        ) {
+            when (pending) {
+                is PendingDestination.Collections -> if (pending.accountId == null ||
+                    pending.accountId == auth.authenticatedAccountId()
+                ) {
+                    stack.add(CollectionsRoute(ids.next()))
+                }
+            }
+        }
         return NavigationOutcome.ACCEPTED
     }
 

@@ -1,5 +1,8 @@
 plugins { id("wan.android.feature") }
 dependencies {
+    implementation(projects.core.data)
+    implementation(projects.core.model)
+    implementation(projects.core.result)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.lifecycle.savedstate)
     androidTestImplementation(platform(libs.compose.bom))

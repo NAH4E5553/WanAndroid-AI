@@ -38,4 +38,12 @@
     <string name="logout_confirm_message">本机搜索历史、阅读历史、离线内容和主题设置会保留。</string>
     <string name="logout_remote_failed">本机已退出，服务器退出未确认。</string>
     <string name="cancel">取消</string>
+    <string name="collection_add">收藏</string>
+    <string name="collection_remove">取消收藏</string>
+    <string name="collection_removed">已取消收藏</string>
+    <string name="collection_busy">处理中…</string>
+    <string name="collection_verify">确认收藏状态</string>
+    <string name="collections_login_required">请登录后查看收藏</string>
+    <string name="collections_empty">还没有收藏，阅读文章时可以添加收藏</string>
+    <string name="collections_end">已经到底了</string>
 </resources>

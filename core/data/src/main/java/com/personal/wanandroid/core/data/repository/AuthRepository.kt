@@ -31,6 +31,8 @@ import kotlinx.coroutines.withContext
 data class LogoutResult(val generation: Long?, val result: DataResult<Unit>)
 
 interface AuthRepository {
+    fun authenticatedAccountId(): Long? = null
+    fun knownAccountId(): Long? = authenticatedAccountId()
     val session: Flow<AuthSession>
     suspend fun restore(): DataResult<Unit>
     suspend fun login(username: String, password: String): DataResult<Unit>
@@ -41,6 +43,12 @@ internal class DefaultAuthRepository @Inject constructor(
     private val source: AuthNetworkDataSource,
     private val sessions: SessionStore
 ) : AuthRepository {
+    override fun authenticatedAccountId(): Long? = sessions.state.value.let {
+        it.user?.id.takeIf { _ -> it.phase == SessionPhase.AUTHENTICATED }
+    }
+
+    override fun knownAccountId(): Long? = sessions.state.value.user?.id
+
     private val restoreMutex = Mutex()
     override val session: Flow<AuthSession> = sessions.state.map { state ->
         AuthSession(
