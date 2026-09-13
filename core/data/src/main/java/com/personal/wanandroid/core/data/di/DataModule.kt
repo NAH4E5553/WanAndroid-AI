@@ -1,15 +1,19 @@
 package com.personal.wanandroid.core.data.di
 
+import com.personal.wanandroid.core.data.datasource.EncryptedSessionStorage
 import com.personal.wanandroid.core.data.datasource.PreferencesSearchHistoryDataSource
 import com.personal.wanandroid.core.data.datasource.PreferencesThemeDataSource
 import com.personal.wanandroid.core.data.datasource.SearchHistoryDataSource
 import com.personal.wanandroid.core.data.datasource.ThemePreferencesDataSource
 import com.personal.wanandroid.core.data.repository.ArticleRepository
+import com.personal.wanandroid.core.data.repository.AuthRepository
 import com.personal.wanandroid.core.data.repository.DefaultArticleRepository
+import com.personal.wanandroid.core.data.repository.DefaultAuthRepository
 import com.personal.wanandroid.core.data.repository.DefaultSearchSuggestionsRepository
 import com.personal.wanandroid.core.data.repository.DefaultThemePreferencesRepository
 import com.personal.wanandroid.core.data.repository.SearchSuggestionsRepository
 import com.personal.wanandroid.core.data.repository.ThemePreferencesRepository
+import com.personal.wanandroid.core.network.session.SessionStorage
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,6 +23,14 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModule {
+    @Binds
+    @Singleton
+    internal abstract fun sessionStorage(implementation: EncryptedSessionStorage): SessionStorage
+
+    @Binds
+    @Singleton
+    internal abstract fun authRepository(implementation: DefaultAuthRepository): AuthRepository
+
     @Binds
     @Singleton
     internal abstract fun searchHistory(

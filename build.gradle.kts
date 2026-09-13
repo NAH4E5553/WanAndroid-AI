@@ -56,7 +56,13 @@ tasks.register("verifyArchitecture") {
                 module.path == ":app" -> subprojects.filter {
                     it.path.startsWith(":feature:")
                 }.map { it.path }.toSet() +
-                    setOf(":core:data", ":core:navigation", ":core:designsystem", ":core:ui")
+                    setOf(
+                        ":core:data",
+                        ":core:result",
+                        ":core:navigation",
+                        ":core:designsystem",
+                        ":core:ui"
+                    )
 
                 module.path.startsWith(":feature:") -> setOf(
                     ":core:common",

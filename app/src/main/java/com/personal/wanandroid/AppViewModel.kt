@@ -5,15 +5,24 @@ import androidx.lifecycle.viewModelScope
 import com.personal.wanandroid.core.data.model.ThemeModePreference
 import com.personal.wanandroid.core.data.model.ThemePalettePreference
 import com.personal.wanandroid.core.data.model.ThemePreferencesState
+import com.personal.wanandroid.core.data.repository.AuthRepository
 import com.personal.wanandroid.core.data.repository.ThemePreferencesRepository
 import com.personal.wanandroid.core.designsystem.theme.WanPalette
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-class AppViewModel @Inject constructor(repository: ThemePreferencesRepository) : ViewModel() {
+class AppViewModel @Inject constructor(
+    repository: ThemePreferencesRepository,
+    authRepository: AuthRepository
+) : ViewModel() {
+    init {
+        viewModelScope.launch { authRepository.restore() }
+    }
+
     val themeState = repository.state.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

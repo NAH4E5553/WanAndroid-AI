@@ -1,6 +1,7 @@
 package com.personal.wanandroid.core.data.mapper
 
 import com.personal.wanandroid.core.network.dto.WanResponse
+import com.personal.wanandroid.core.network.session.SessionStorageException
 import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.result.DataResult
 import com.personal.wanandroid.core.result.map
@@ -21,8 +22,17 @@ internal suspend fun <T : Any, R> requestWithData(
     }
 } catch (cancelled: CancellationException) {
     throw cancelled
+} catch (_: SessionStorageException) {
+    DataResult.Failure(DataError.STORAGE)
 } catch (_: IOException) {
     DataResult.Failure(DataError.NETWORK)
 } catch (_: Exception) {
     DataResult.Failure(DataError.INVALID_RESPONSE)
 }
+
+/** Successful write responses may legitimately have no data. */
+internal suspend fun requestWithoutData(call: suspend () -> WanResponse<*>): DataResult<Unit> =
+    requestWithData({
+        val response = call()
+        WanResponse(response.errorCode, response.errorMsg, Unit)
+    }) { Unit }

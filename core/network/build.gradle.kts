@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.serialization)
 }
 dependencies {
+    testImplementation(libs.coroutines.test)
+    implementation(libs.coroutines)
     implementation(libs.serialization)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter)

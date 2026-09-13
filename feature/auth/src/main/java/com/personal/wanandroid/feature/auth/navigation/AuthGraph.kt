@@ -6,7 +6,7 @@ import com.personal.wanandroid.core.navigation.LoginRoute as RouteKey
 import com.personal.wanandroid.core.navigation.NavigationDispatcher
 import com.personal.wanandroid.core.navigation.NavigationHostToken
 import com.personal.wanandroid.core.navigation.NavigationSource
-import com.personal.wanandroid.feature.auth.view.LoginScreen
+import com.personal.wanandroid.feature.auth.view.LoginRoute
 
 fun EntryProviderScope<NavKey>.authGraph(
     dispatcher: NavigationDispatcher,
@@ -14,6 +14,9 @@ fun EntryProviderScope<NavKey>.authGraph(
 ) {
     entry<RouteKey>(clazzContentKey = { it.entryId }) { route ->
         val source = NavigationSource(host, route.entryId)
-        LoginScreen(onBack = { dispatcher.back(source) })
+        LoginRoute(
+            onBack = { dispatcher.back(source) },
+            onLoggedIn = { dispatcher.back(source) }
+        )
     }
 }

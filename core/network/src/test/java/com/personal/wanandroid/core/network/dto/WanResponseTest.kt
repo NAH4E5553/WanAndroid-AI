@@ -3,6 +3,7 @@ package com.personal.wanandroid.core.network.dto
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -30,5 +31,18 @@ class WanResponseTest {
         )
         assertNull(result.author)
         assertEquals(1L, result.id)
+    }
+
+    @Test fun loginUserIgnoresServerCredentialFieldsAndAllowsNullNickname() {
+        val user = json.decodeFromString<UserDto>(
+            """{
+                "id":7,"username":"fixture","nickname":null,
+                "password":"fixture-secret","token":"fixture-token"
+            }"""
+        )
+        assertEquals(7L, user.id)
+        assertNull(user.nickname)
+        assertFalse(user.toString().contains("fixture-secret"))
+        assertFalse(user.toString().contains("fixture-token"))
     }
 }
