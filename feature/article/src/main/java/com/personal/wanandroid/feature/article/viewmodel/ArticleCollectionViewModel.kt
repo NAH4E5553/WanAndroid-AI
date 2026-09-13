@@ -33,8 +33,9 @@ internal class ArticleCollectionViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun load(target: CollectionTarget, generation: Long) {
-        if (repository.current().generation != generation ||
-            repository.current().status(target).collected != null
+        val snapshot = repository.current()
+        if (snapshot.generation != generation ||
+            snapshot.status(target).collected != null
         ) {
             return
         }

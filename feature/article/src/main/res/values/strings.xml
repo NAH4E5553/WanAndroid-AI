@@ -22,7 +22,4 @@
     <string name="collection_removed">已取消收藏</string>
     <string name="collection_busy">处理中…</string>
     <string name="collection_verify">确认收藏状态</string>
-    <string name="collections_login_required">请登录后查看收藏</string>
-    <string name="collections_empty">还没有收藏，阅读文章时可以添加收藏</string>
-    <string name="collections_end">已经到底了</string>
 </resources>

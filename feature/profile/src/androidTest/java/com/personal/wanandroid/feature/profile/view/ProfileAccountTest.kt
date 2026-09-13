@@ -32,7 +32,8 @@ class ProfileAccountTest {
                     themeSummary = "石板蓝",
                     currentPalette = ThemePalettePreference.SLATE_BLUE,
                     onLogin = login,
-                    onThemeSettings = {}
+                    onThemeSettings = {},
+                    onCollections = {}
                 )
             }
         }

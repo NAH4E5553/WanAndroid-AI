@@ -216,9 +216,11 @@ class ArticleScreenTest {
     }
 
     private fun captureMenu(name: String) {
+        // Optional local visual evidence; functional regression tests do not require screenshots.
+        if (InstrumentationRegistry.getArguments().getString("captureScreenshots") != "true") return
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+        val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
         File(instrumentation.targetContext.cacheDir, name).outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }

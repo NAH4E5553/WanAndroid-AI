@@ -16,12 +16,14 @@ import com.personal.wanandroid.core.result.DataError
 import com.personal.wanandroid.core.result.DataResult
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 interface CollectionRepository {
@@ -60,8 +62,10 @@ class DefaultCollectionRepository @Inject constructor(
         return tag.takeIf { it.generation == generation && current().generation == generation }
     }
 
-    private fun isCurrent(tag: SessionRequest) =
-        sessions.isCurrent(tag) && current().generation == tag.generation
+    private fun isCurrent(tag: SessionRequest): Boolean {
+        val session = sessions.state.value
+        return session.generation == tag.generation && session.phase == SessionPhase.AUTHENTICATED
+    }
 
     private fun publish(
         tag: SessionRequest,
@@ -69,8 +73,9 @@ class DefaultCollectionRepository @Inject constructor(
         status: CollectionStatus,
         changed: Boolean = false
     ) = synchronized(lock) {
-        if (isCurrent(tag)) {
-            val old = current()
+        val old = current()
+        // Validate the exact snapshot being copied, never resample a different account afterward.
+        if (old.generation == tag.generation) {
             cache.value =
                 old.copy(
                     statuses = old.statuses + (target.key to status),
@@ -81,29 +86,36 @@ class DefaultCollectionRepository @Inject constructor(
     }
 
     private fun begin(tag: SessionRequest, target: CollectionTarget): Boolean = synchronized(lock) {
-        if (!isCurrent(tag) || current().status(target).busy) return@synchronized false
-        publish(tag, target, current().status(target).copy(busy = true))
+        val old = current()
+        if (old.generation != tag.generation || old.status(target).busy) return@synchronized false
+        cache.value = old.copy(
+            statuses = old.statuses + (target.key to old.status(target).copy(busy = true))
+        )
         true
     }
 
-    override suspend fun page(generation: Long, page: Int): DataResult<PageResult<CollectionItem>> {
-        val tag = request(generation) ?: return changed()
-        val revision = synchronized(lock) { writeVersion }
-        val result = readPage(tag, page)
-        currentCoroutineContext().ensureActive()
-        synchronized(lock) {
-            if (!isCurrent(tag) || writeVersion != revision) return changed()
-            if (result is DataResult.Success) {
+    override suspend fun page(generation: Long, page: Int): DataResult<PageResult<CollectionItem>> =
+        withContext(Dispatchers.IO) {
+            val tag = request(generation) ?: return@withContext changed()
+            val revision = synchronized(lock) { writeVersion }
+            val result = readPage(tag, page)
+            currentCoroutineContext().ensureActive()
+            synchronized(lock) {
                 val old = current()
-                val known = result.value.items.filter { !old.status(it.target).busy }.associate {
-                    it.target.key to
-                        CollectionStatus(true)
+                if (old.generation != tag.generation || writeVersion != revision) {
+                    return@withContext changed()
                 }
-                cache.value = old.copy(statuses = old.statuses + known)
+                if (result is DataResult.Success) {
+                    val idleItems = result.value.items.filter { !old.status(it.target).busy }
+                    val known = idleItems.associate {
+                        it.target.key to
+                            CollectionStatus(true)
+                    }
+                    cache.value = old.copy(statuses = old.statuses + known)
+                }
             }
+            return@withContext result
         }
-        return result
-    }
 
     private suspend fun readPage(
         tag: SessionRequest,
@@ -127,15 +139,16 @@ class DefaultCollectionRepository @Inject constructor(
         return if (isCurrent(tag)) result else changed()
     }
 
-    override suspend fun reconcile(generation: Long, target: CollectionTarget): DataResult<Unit> {
-        val tag = request(generation) ?: return changed()
-        if (!begin(tag, target)) return DataResult.Success(Unit)
-        return try {
-            reconcileLocked(tag, target)
-        } finally {
-            publish(tag, target, current().status(target).copy(busy = false))
+    override suspend fun reconcile(generation: Long, target: CollectionTarget): DataResult<Unit> =
+        withContext(Dispatchers.IO) {
+            val tag = request(generation) ?: return@withContext changed()
+            if (!begin(tag, target)) return@withContext DataResult.Success(Unit)
+            return@withContext try {
+                reconcileLocked(tag, target)
+            } finally {
+                publish(tag, target, current().status(target).copy(busy = false))
+            }
         }
-    }
 
     /** Absence is known only after reaching the end; a bounded/failed scan stays unknown. */
     private suspend fun reconcileLocked(
@@ -172,18 +185,20 @@ class DefaultCollectionRepository @Inject constructor(
         generation: Long,
         target: CollectionTarget,
         collected: Boolean
-    ): DataResult<Unit> {
-        val tag = request(generation) ?: return changed()
-        if (!begin(tag, target)) return DataResult.Success(Unit)
+    ): DataResult<Unit> = withContext(Dispatchers.IO) {
+        val tag = request(generation) ?: return@withContext changed()
+        if (!begin(tag, target)) return@withContext DataResult.Success(Unit)
         var attempted = false
         try {
             val previous = current().status(target).collected
             // An uncertain previous request can only be reconciled, never blindly replayed.
-            if (previous == null) return reconcileLocked(tag, target)
-            if (previous == collected) return DataResult.Success(Unit)
-            if (collected && target.articleId == null) return DataResult.Failure(DataError.SERVICE)
+            if (previous == null) return@withContext reconcileLocked(tag, target)
+            if (previous == collected) return@withContext DataResult.Success(Unit)
+            if (collected && target.articleId == null) {
+                return@withContext DataResult.Failure(DataError.SERVICE)
+            }
             currentCoroutineContext().ensureActive()
-            if (!isCurrent(tag)) return changed()
+            if (!isCurrent(tag)) return@withContext changed()
             attempted = true
             synchronized(lock) { writeVersion++ }
             publish(tag, target, CollectionStatus(busy = true))
@@ -201,7 +216,7 @@ class DefaultCollectionRepository @Inject constructor(
                 }
             }
             currentCoroutineContext().ensureActive()
-            if (!isCurrent(tag)) return changed()
+            if (!isCurrent(tag)) return@withContext changed()
             when {
                 result is DataResult.Success -> publish(
                     tag,
@@ -218,8 +233,8 @@ class DefaultCollectionRepository @Inject constructor(
                 else -> publish(tag, target, CollectionStatus(previous, busy = true))
             }
             currentCoroutineContext().ensureActive()
-            if (!isCurrent(tag)) return changed()
-            return if (current().status(target).collected ==
+            if (!isCurrent(tag)) return@withContext changed()
+            return@withContext if (current().status(target).collected ==
                 collected
             ) {
                 DataResult.Success(Unit)
@@ -231,8 +246,13 @@ class DefaultCollectionRepository @Inject constructor(
             throw cancelled
         } finally {
             if (attempted) synchronized(lock) { if (isCurrent(tag)) writeVersion++ }
-            // Refresh collection pagination after every attempted write, including uncertain writes.
-            publish(tag, target, current().status(target).copy(busy = false), changed = attempted)
+            // Refresh pagination after every attempted write, including uncertain writes.
+            publish(
+                tag,
+                target,
+                current().status(target).copy(busy = false),
+                changed = attempted
+            )
         }
     }
 

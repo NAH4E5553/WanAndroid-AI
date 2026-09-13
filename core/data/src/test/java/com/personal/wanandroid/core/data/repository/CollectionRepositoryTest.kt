@@ -22,6 +22,7 @@ import kotlinx.serialization.json.JsonElement
 import okhttp3.Cookie
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,7 +48,10 @@ class CollectionRepositoryTest {
         var data = listOf(dto)
         var over = true
         var pageCalls = 0
+        var lastReadThread: Thread? = null
         var writes = mutableListOf<String>()
+        val writeStarted = CompletableDeferred<Unit>()
+        var listStarted: CompletableDeferred<Unit>? = null
         var writeGate: CompletableDeferred<Unit>? = null
         var listGate: CompletableDeferred<Unit>? = null
         var nonCooperative = false
@@ -60,7 +64,9 @@ class CollectionRepositoryTest {
             session: SessionRequest
         ): WanResponse<WanPageDto<CollectionDto>> {
             pageCalls++
+            lastReadThread = Thread.currentThread()
             val snapshot = data
+            listStarted?.complete(Unit)
             if (nonCooperative) {
                 withContext(NonCancellable) {
                     listGate?.await()
@@ -73,6 +79,7 @@ class CollectionRepositoryTest {
         }
         private suspend fun write(name: String, collected: Boolean): WanResponse<JsonElement> {
             writes.add(name)
+            writeStarted.complete(Unit)
             writeGate?.await()
             if (applied && businessCode == 0) data = if (collected) listOf(dto) else emptyList()
             writeError?.let { throw it }
@@ -132,6 +139,7 @@ class CollectionRepositoryTest {
             async(start = CoroutineStart.UNDISPATCHED) {
                 repository.setCollected(generation, internal, false)
             }
+        source.writeStarted.await()
         repository.setCollected(generation, internal, false)
         assertTrue(repository.current().status(internal).busy)
         assertEquals(1, source.writes.size)
@@ -183,6 +191,7 @@ class CollectionRepositoryTest {
             async(start = CoroutineStart.UNDISPATCHED) {
                 repository.setCollected(generation, internal, false)
             }
+        source.writeStarted.await()
         task.cancel()
         task.join()
         assertNull(repository.current().status(internal).collected)
@@ -198,6 +207,7 @@ class CollectionRepositoryTest {
             async(start = CoroutineStart.UNDISPATCHED) {
                 repository.setCollected(generation, internal, false)
             }
+        source.writeStarted.await()
         val next = signIn(8)
         source.writeGate!!.complete(Unit)
         assertEquals(DataResult.Failure(DataError.SESSION_CHANGED), task.await())
@@ -211,7 +221,9 @@ class CollectionRepositoryTest {
         val generation = signIn()
         repository.page(generation, 0)
         source.listGate = CompletableDeferred()
+        source.listStarted = CompletableDeferred()
         val page = async(start = CoroutineStart.UNDISPATCHED) { repository.page(generation, 0) }
+        source.listStarted!!.await()
         repository.setCollected(generation, internal, false)
         source.listGate!!.complete(Unit)
         assertEquals(DataResult.Failure(DataError.SESSION_CHANGED), page.await())
@@ -221,8 +233,10 @@ class CollectionRepositoryTest {
     @Test fun cancelledNonCooperativeReadDoesNotSeedCache() = runTest {
         val generation = signIn()
         source.listGate = CompletableDeferred()
+        source.listStarted = CompletableDeferred()
         source.nonCooperative = true
         val page = async(start = CoroutineStart.UNDISPATCHED) { repository.page(generation, 0) }
+        source.listStarted!!.await()
         page.cancel()
         source.listGate!!.complete(Unit)
         page.join()
@@ -252,5 +266,25 @@ class CollectionRepositoryTest {
         repository.setCollected(generation, internal, false)
         assertEquals(0, source.pageCalls)
         assertTrue(source.writes.isEmpty())
+    }
+
+    @Test fun collectionRequestsLeaveTheCallerThread() = runTest {
+        val generation = signIn()
+        val caller = Thread.currentThread()
+        repository.page(generation, 0)
+        assertNotSame(caller, source.lastReadThread)
+    }
+
+    @Test fun oldReadCannotSeedANewAccountsSnapshot() = runTest {
+        val generation = signIn()
+        source.listGate = CompletableDeferred()
+        source.listStarted = CompletableDeferred()
+        val page = async { repository.page(generation, 0) }
+        source.listStarted!!.await()
+        val next = signIn(8)
+        source.listGate!!.complete(Unit)
+        assertEquals(DataResult.Failure(DataError.SESSION_CHANGED), page.await())
+        assertEquals(next, repository.current().generation)
+        assertTrue(repository.current().statuses.isEmpty())
     }
 }

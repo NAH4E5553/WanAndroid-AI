@@ -79,7 +79,7 @@ import com.personal.wanandroid.feature.profile.viewmodel.ThemeSettingsViewModel
 fun ProfileRoute(
     onLogin: () -> Unit,
     onThemeSettings: () -> Unit,
-    onCollections: () -> Unit = {},
+    onCollections: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -107,7 +107,7 @@ fun ProfileScreen(
     currentPalette: ThemePalettePreference,
     onLogin: () -> Unit,
     onThemeSettings: () -> Unit,
-    onCollections: () -> Unit = {},
+    onCollections: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
