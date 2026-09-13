@@ -3,7 +3,9 @@ package com.personal.wanandroid.feature.article.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personal.wanandroid.core.data.repository.ReadingHistoryRepository
 import com.personal.wanandroid.core.navigation.ArticleRoute as ArticleKey
+import com.personal.wanandroid.core.result.DataResult
 import com.personal.wanandroid.feature.article.policy.ReaderUrlPolicy
 import com.personal.wanandroid.feature.article.state.ReaderEvent
 import com.personal.wanandroid.feature.article.state.ReaderFailure
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel(assistedFactory = ArticleViewModel.Factory::class)
 internal class ArticleViewModel @AssistedInject constructor(
     private val savedState: SavedStateHandle,
+    private val history: ReadingHistoryRepository,
     @Assisted private val article: ArticleKey
 ) : ViewModel() {
     private val initialUrl = savedState.get<String>("reader.url")?.let(ReaderUrlPolicy::inAppUrl)
@@ -90,7 +93,9 @@ internal class ArticleViewModel @AssistedInject constructor(
                     current.copy(progress = maxOf(current.progress, event.percent.coerceIn(0, 100)))
             }
 
-            is ReaderEvent.Finished -> if (matches(event.url) && current.failure == null) {
+            is ReaderEvent.Finished -> if (matches(event.url) && current.failure == null &&
+                current.loading
+            ) {
                 timeout?.cancel()
                 mutableState.value = current.copy(
                     loading = false,
@@ -98,6 +103,20 @@ internal class ArticleViewModel @AssistedInject constructor(
                     title =
                         event.title?.trim()?.take(200)?.takeIf { it.isNotEmpty() } ?: current.title
                 )
+                val ready = uiState.value
+                val articleId = article.articleId.takeIf {
+                    ReaderUrlPolicy.samePage(ready.url, article.url)
+                }
+                viewModelScope.launch {
+                    val result = history.record(ready.url, articleId, ready.title)
+                    if (result is DataResult.Failure &&
+                        activeBrowser == id &&
+                        matches(ready.url)
+                    ) {
+                        mutableState.value =
+                            uiState.value.copy(notice = ReaderNotice.HISTORY_SAVE_FAILED)
+                    }
+                }
             }
 
             is ReaderEvent.History -> {

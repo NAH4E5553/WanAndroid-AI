@@ -11,8 +11,10 @@ import com.personal.wanandroid.core.data.repository.CollectionRepository
 import com.personal.wanandroid.core.data.repository.DefaultArticleRepository
 import com.personal.wanandroid.core.data.repository.DefaultAuthRepository
 import com.personal.wanandroid.core.data.repository.DefaultCollectionRepository
+import com.personal.wanandroid.core.data.repository.DefaultReadingHistoryRepository
 import com.personal.wanandroid.core.data.repository.DefaultSearchSuggestionsRepository
 import com.personal.wanandroid.core.data.repository.DefaultThemePreferencesRepository
+import com.personal.wanandroid.core.data.repository.ReadingHistoryRepository
 import com.personal.wanandroid.core.data.repository.SearchSuggestionsRepository
 import com.personal.wanandroid.core.data.repository.ThemePreferencesRepository
 import com.personal.wanandroid.core.network.session.SessionStorage
@@ -25,6 +27,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModule {
+    @Binds
+    @Singleton
+    abstract fun readingHistory(
+        implementation: DefaultReadingHistoryRepository
+    ): ReadingHistoryRepository
+
     @Binds
     @Singleton
     abstract fun collections(implementation: DefaultCollectionRepository): CollectionRepository

@@ -5,9 +5,14 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.personal.wanandroid.core.database.entity.ReadingHistoryEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReadingDao {
+    // Room emits on table invalidation even when the count is unchanged (e.g. a revisit).
+    @Query("SELECT COUNT(*) FROM reading_history")
+    fun changes(): Flow<Int>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun record(entry: ReadingHistoryEntity)
 

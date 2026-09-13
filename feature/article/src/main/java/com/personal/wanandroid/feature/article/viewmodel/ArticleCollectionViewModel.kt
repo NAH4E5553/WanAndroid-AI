@@ -32,29 +32,26 @@ internal class ArticleCollectionViewModel @Inject constructor(
     }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    fun load(target: CollectionTarget, generation: Long) {
-        val snapshot = repository.current()
-        if (snapshot.generation != generation ||
-            snapshot.status(target).collected != null
-        ) {
-            return
-        }
-        viewModelScope.launch {
-            report(generation, repository.reconcile(generation, target))
-        }
-    }
-    fun toggle(target: CollectionTarget, generation: Long, collected: Boolean?) {
+    fun toggle(target: CollectionTarget, generation: Long, collected: Boolean) {
         if (repository.current().generation != generation) return
         errors.value = null
         viewModelScope.launch {
-            val result = if (collected ==
-                null
-            ) {
-                repository.reconcile(generation, target)
-            } else {
-                repository.setCollected(generation, target, !collected)
+            // Unknown transport state is reconciled within this explicit action, not as a
+            // separate user-facing step. A failed reconciliation must never trigger a POST.
+            if (repository.current().status(target).collected == null) {
+                val result = repository.reconcile(generation, target)
+                if (result is DataResult.Failure) {
+                    report(generation, result)
+                    return@launch
+                }
             }
-            report(generation, result)
+            val snapshot = repository.current()
+            if (snapshot.generation != generation || snapshot.status(target).busy ||
+                snapshot.status(target).collected == null
+            ) {
+                return@launch
+            }
+            report(generation, repository.setCollected(generation, target, !collected))
         }
     }
     private fun report(generation: Long, result: DataResult<Unit>) {

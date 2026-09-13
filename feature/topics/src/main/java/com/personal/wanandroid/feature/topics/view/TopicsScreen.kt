@@ -57,6 +57,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.common.base.state.LoadState
 import com.personal.wanandroid.core.common.base.state.PagedUiState
+import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.model.Topic
 import com.personal.wanandroid.core.ui.component.card.ArticleCard
 import com.personal.wanandroid.core.ui.component.network.ErrorContent
@@ -72,7 +73,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TopicsRoute(
-    onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
+    onArticleClick: (Article) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TopicsViewModel = hiltViewModel()
 ) {
@@ -96,7 +97,7 @@ internal fun TopicsScreen(
     onSelect: (Long) -> Unit,
     onSelectChild: (Long, Long) -> Unit,
     onRetryTopics: () -> Unit,
-    onArticleClick: (String, String, Long) -> Unit,
+    onArticleClick: (Article) -> Unit,
     onRefresh: (Long) -> Unit,
     onInitialRetry: (Long) -> Unit,
     onRefreshRetry: (Long) -> Unit,
@@ -258,11 +259,7 @@ internal fun TopicsScreen(
                                                 )
                                             ) { article ->
                                                 ArticleCard(article) {
-                                                    onArticleClick(
-                                                        article.url,
-                                                        article.title,
-                                                        article.id
-                                                    )
+                                                    onArticleClick(article)
                                                 }
                                             }
                                         }

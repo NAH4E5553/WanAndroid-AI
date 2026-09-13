@@ -64,11 +64,21 @@ fun AppNavigation(dispatcher: NavigationDispatcher) {
                 MainTabs(
                     onSearch = { dispatcher.navigateFrom(source, Destination.Search) },
                     onQuestionsClick = { dispatcher.navigateFrom(source, Destination.Questions) },
-                    onArticleClick = { url, title, id ->
-                        dispatcher.navigateFrom(source, Destination.Article(url, title, id))
+                    onArticleClick = { article ->
+                        dispatcher.navigateFrom(
+                            source,
+                            Destination.Article(
+                                article.url,
+                                article.title,
+                                article.id,
+                                collected = article.collected,
+                                collectionSession = article.collectionSession
+                            )
+                        )
                     },
                     onLogin = { dispatcher.navigateFrom(source, Destination.Login) },
                     onCollections = { dispatcher.navigateFrom(source, Destination.Collections) },
+                    onHistory = { dispatcher.navigateFrom(source, Destination.History) },
                     onThemeSettings = { dispatcher.navigateFrom(source, Destination.ThemeSettings) }
                 )
             }
@@ -84,9 +94,10 @@ fun AppNavigation(dispatcher: NavigationDispatcher) {
 private fun MainTabs(
     onSearch: () -> Unit,
     onQuestionsClick: () -> Unit,
-    onArticleClick: (url: String, title: String, articleId: Long) -> Unit,
+    onArticleClick: (com.personal.wanandroid.core.model.Article) -> Unit,
     onLogin: () -> Unit,
     onCollections: () -> Unit,
+    onHistory: () -> Unit,
     onThemeSettings: () -> Unit
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -123,6 +134,7 @@ private fun MainTabs(
                 2 -> ProfileRoute(
                     onLogin = onLogin,
                     onCollections = onCollections,
+                    onHistory = onHistory,
                     onThemeSettings = onThemeSettings,
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )

@@ -33,7 +33,8 @@ class ProfileAccountTest {
                     currentPalette = ThemePalettePreference.SLATE_BLUE,
                     onLogin = login,
                     onThemeSettings = {},
-                    onCollections = {}
+                    onCollections = {},
+                    onHistory = {}
                 )
             }
         }

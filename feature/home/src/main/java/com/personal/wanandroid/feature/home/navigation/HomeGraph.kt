@@ -22,7 +22,13 @@ fun EntryProviderScope<NavKey>.homeGraph(
             onArticleClick = { article ->
                 dispatcher.navigateFrom(
                     source,
-                    Destination.Article(article.url, article.title, article.id)
+                    Destination.Article(
+                        article.url,
+                        article.title,
+                        article.id,
+                        collected = article.collected,
+                        collectionSession = article.collectionSession
+                    )
                 )
             }
         )
@@ -31,8 +37,17 @@ fun EntryProviderScope<NavKey>.homeGraph(
         val source = NavigationSource(host, route.entryId)
         DailyQuestionsRoute(
             onBack = { dispatcher.back(source) },
-            onArticleClick = { url, title, id ->
-                dispatcher.navigateFrom(source, Destination.Article(url, title, id))
+            onArticleClick = { article ->
+                dispatcher.navigateFrom(
+                    source,
+                    Destination.Article(
+                        article.url,
+                        article.title,
+                        article.id,
+                        collected = article.collected,
+                        collectionSession = article.collectionSession
+                    )
+                )
             }
         )
     }

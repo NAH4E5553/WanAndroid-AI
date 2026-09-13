@@ -19,6 +19,17 @@ class SessionStore(private val storage: SessionStorage, private val now: () -> L
     @Inject constructor(storage: SessionStorage) : this(storage, System::currentTimeMillis)
     private val mutableState = MutableStateFlow(SessionSnapshot())
     val state = mutableState.asStateFlow()
+    private val instanceKey = java.util.UUID.randomUUID().toString()
+
+    /** Non-credential identity for account-bound response hints; never reused after process death. */
+    fun authenticatedVersionKey(): String? {
+        val snapshot = state.value
+        return "$instanceKey:${snapshot.generation}".takeIf {
+            snapshot.phase ==
+                SessionPhase.AUTHENTICATED
+        }
+    }
+
     private var initialized = false
     private var cookies: List<Cookie> = emptyList()
     private val json = Json { ignoreUnknownKeys = true }

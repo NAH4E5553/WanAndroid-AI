@@ -43,6 +43,9 @@ class CollectionsViewModelTest {
         var failure: DataError? = null
         var writes = 0
         override fun current() = state.value
+        override suspend fun articlePage(
+            load: suspend () -> DataResult<PageResult<com.personal.wanandroid.core.model.Article>>
+        ) = load()
         override suspend fun page(
             generation: Long,
             page: Int

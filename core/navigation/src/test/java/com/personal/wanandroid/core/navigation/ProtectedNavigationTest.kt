@@ -24,6 +24,37 @@ class ProtectedNavigationTest {
     private var host = dispatcher.attach(stack)
     private fun source() = NavigationSource(host, (stack.last() as AppRoute).entryId)
 
+    @Test fun articleRouteCarriesListCollectAndLinkThroughRestoration() {
+        dispatcher.navigateFrom(
+            source(),
+            Destination.Article(
+                "https://fixture.invalid/article",
+                "Fixture",
+                42,
+                collected = true,
+                collectionSession = "fixture-session"
+            )
+        )
+        val route = stack.last() as ArticleRoute
+        assertEquals(true, route.collected)
+        assertEquals("fixture-session", route.collectionSession)
+        assertEquals("https://fixture.invalid/article", route.url)
+        val encoded = Json.encodeToString<AppRoute>(route)
+        assertEquals(route, Json.decodeFromString<AppRoute>(encoded))
+    }
+
+    @Test fun readingHistoryIsLocalAndRestoresWithoutLogin() {
+        assertEquals(
+            NavigationOutcome.ACCEPTED,
+            dispatcher.navigateFrom(source(), Destination.History)
+        )
+        assertTrue(stack.last() is HistoryRoute)
+        val encoded = Json.encodeToString(stack.map { it as AppRoute })
+        assertEquals(stack.toList(), Json.decodeFromString<List<AppRoute>>(encoded))
+        dispatcher.back(source())
+        assertEquals(1, stack.size)
+    }
+
     @Test fun guestTargetSurvivesRestoreAndIsConsumedOnce() {
         dispatcher.navigateFrom(source(), Destination.Collections)
         assertTrue((stack.last() as LoginRoute).pending is PendingDestination.Collections)

@@ -29,6 +29,20 @@ class SessionStoreTest {
         return request
     }
 
+    @Test fun responseHintVersionChangesWithSessionAndProcess() {
+        assertNull(store.authenticatedVersionKey())
+        login()
+        val key = store.authenticatedVersionKey()
+        assertNotNull(key)
+        val restored = SessionStore(storage) { time }
+        restored.initialize()
+        assertNull(restored.authenticatedVersionKey())
+        restored.verified(restored.capture(), user)
+        assertFalse(key == restored.authenticatedVersionKey())
+        login()
+        assertFalse(key == store.authenticatedVersionKey())
+    }
+
     @Test fun emptyStorageIsGuestAndHasNoCookie() {
         assertEquals(SessionPhase.GUEST, store.initialize().phase)
         assertEquals("", store.cookieHeader(store.capture(), SessionStore.API))

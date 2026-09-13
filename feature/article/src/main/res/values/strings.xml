@@ -21,5 +21,6 @@
     <string name="collection_remove">取消收藏</string>
     <string name="collection_removed">已取消收藏</string>
     <string name="collection_busy">处理中…</string>
-    <string name="collection_verify">确认收藏状态</string>
+    <string name="collection_operation_failed">收藏操作未完成：%1$s</string>
+    <string name="reader_history_save_failed">阅读历史保存失败</string>
 </resources>

@@ -35,7 +35,7 @@ class ArticleCollectionActionTest {
         compose.runOnIdle { assertEquals(1, writes) }
     }
 
-    @Test fun busyIsDisabledAndUncertainStateOffersVerification() {
+    @Test fun busyIsDisabledAndMenuHasOnlyCollectionActions() {
         val state = mutableStateOf(CollectionStatus(busy = true))
         var clicks = 0
         compose.setContent {
@@ -43,7 +43,8 @@ class ArticleCollectionActionTest {
         }
         compose.onNodeWithText("处理中…").assertIsNotEnabled()
         compose.runOnIdle { state.value = CollectionStatus() }
-        compose.onNodeWithText("确认收藏状态").performClick()
+        compose.onNodeWithText("确认收藏状态").assertDoesNotExist()
+        compose.onNodeWithText("收藏").performClick()
         compose.runOnIdle {
             assertEquals(1, clicks)
             state.value = CollectionStatus(true)
