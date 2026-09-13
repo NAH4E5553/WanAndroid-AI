@@ -19,6 +19,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,10 +33,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,10 +63,14 @@ import com.personal.wanandroid.core.designsystem.theme.WanPalette
 import com.personal.wanandroid.core.designsystem.theme.WanPaletteSwatches
 import com.personal.wanandroid.core.designsystem.theme.WanSpacing
 import com.personal.wanandroid.core.designsystem.theme.swatches
+import com.personal.wanandroid.core.model.auth.AuthNotice
+import com.personal.wanandroid.core.model.auth.AuthStatus
 import com.personal.wanandroid.core.ui.component.list.AppListItem
 import com.personal.wanandroid.core.ui.component.list.SettingsSectionLabel
+import com.personal.wanandroid.core.ui.component.network.errorMessage
 import com.personal.wanandroid.core.ui.component.scaffold.AppScaffold
 import com.personal.wanandroid.feature.profile.R
+import com.personal.wanandroid.feature.profile.state.AccountUiState
 import com.personal.wanandroid.feature.profile.state.ThemeSettingsUiState
 import com.personal.wanandroid.feature.profile.viewmodel.ProfileViewModel
 import com.personal.wanandroid.feature.profile.viewmodel.ThemeSettingsViewModel
@@ -75,7 +83,11 @@ fun ProfileRoute(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.themeState.collectAsStateWithLifecycle()
+    val account by viewModel.accountState.collectAsStateWithLifecycle()
     ProfileScreen(
+        account = account,
+        onLogout = viewModel::logout,
+        onRetrySession = viewModel::retrySession,
         themeSummary = state.preferences.summary(),
         currentPalette = state.preferences.palette,
         onLogin = onLogin,
@@ -86,6 +98,9 @@ fun ProfileRoute(
 
 @Composable
 fun ProfileScreen(
+    account: AccountUiState,
+    onLogout: () -> Unit,
+    onRetrySession: () -> Unit,
     themeSummary: String,
     currentPalette: ThemePalettePreference,
     onLogin: () -> Unit,
@@ -101,7 +116,7 @@ fun ProfileScreen(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold
         )
-        AccountCard(onLogin)
+        AccountCard(account, onLogin, onLogout, onRetrySession)
         SettingsSectionLabel(stringResource(R.string.my_content))
         Card(
             colors = CardDefaults.cardColors(
@@ -125,39 +140,81 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun AccountCard(onLogin: () -> Unit) {
+private fun AccountCard(
+    state: AccountUiState,
+    onLogin: () -> Unit,
+    onLogout: () -> Unit,
+    onRetrySession: () -> Unit
+) {
+    var confirmLogout by remember { mutableStateOf(false) }
+    val user = state.session.user
+    val loading = state.session.status in setOf(AuthStatus.LOADING, AuthStatus.VERIFYING)
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(WanSpacing.page),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            Modifier.fillMaxWidth().padding(WanSpacing.page),
+            verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.guest_avatar),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+            Text(
+                user?.displayName ?: stringResource(R.string.guest_name),
+                style = MaterialTheme.typography.titleLarge
+            )
+            if (loading) Text(stringResource(R.string.session_restoring))
+            if (state.session.status == AuthStatus.UNVERIFIED) {
+                Text(stringResource(R.string.session_unverified))
+                TextButton(onClick = onRetrySession, enabled = !state.busy) {
+                    Text(stringResource(R.string.session_retry))
                 }
             }
-            Spacer(Modifier.width(WanSpacing.medium))
-            Text(
-                text = stringResource(R.string.login_supporting),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(WanSpacing.small))
-            Button(onClick = onLogin) { Text(stringResource(R.string.login)) }
+            when (state.session.notice) {
+                AuthNotice.EXPIRED -> Text(stringResource(R.string.session_expired))
+                AuthNotice.STORAGE_ERROR -> Text(stringResource(R.string.session_storage_failed))
+                AuthNotice.NONE -> Unit
+            }
+            state.error?.let {
+                Text(
+                    if (user == null &&
+                        state.session.notice != AuthNotice.STORAGE_ERROR
+                    ) {
+                        stringResource(R.string.logout_remote_failed)
+                    } else {
+                        errorMessage(it)
+                    },
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            if (user != null) {
+                TextButton(onClick = {
+                    confirmLogout = true
+                }, enabled = !state.busy) { Text(stringResource(R.string.logout)) }
+            } else {
+                Button(onClick = onLogin, enabled = !state.busy && !loading) {
+                    Text(stringResource(R.string.login))
+                }
+            }
         }
+    }
+    if (confirmLogout) {
+        AlertDialog(
+            onDismissRequest = { confirmLogout = false },
+            title = { Text(stringResource(R.string.logout_confirm_title)) },
+            text = { Text(stringResource(R.string.logout_confirm_message)) },
+            confirmButton = {
+                TextButton(modifier = Modifier.testTag("logout_confirm"), onClick = {
+                    confirmLogout = false
+                    onLogout()
+                }) { Text(stringResource(R.string.logout)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    confirmLogout = false
+                }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
     }
 }
 

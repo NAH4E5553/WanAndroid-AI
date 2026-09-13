@@ -47,7 +47,7 @@
 | 模块 | 包目录与职责 |
 |---|---|
 | `core:data` | `repository` 仓储接口及实现；`datasource` 本机存储；`mapper` 响应与模型转换；`model` 存储专属类型；`di` 注入绑定 |
-| `core:network` | `service` Retrofit 接口；`datasource` 网络数据源；`dto` 网络传输模型；`di` 网络配置及绑定 |
+| `core:network` | `service` Retrofit 接口；`datasource` 网络数据源；`dto` 网络传输模型；`session` 会话快照、请求代次及存储接口；`interceptor` API 请求会话处理；`di` 网络配置及绑定 |
 | `core:database` | `dao` 数据访问；`entity` Room 表实体；`model` 查询投影；`di` 数据库注入；数据库入口类保留根包 |
 | `core:common` | `base/viewmodel` 列表基类；`base/state` 分页状态；`paging` 分页控制器 |
 | `core:designsystem` | `theme` 颜色、形状、间距及主题入口 |
