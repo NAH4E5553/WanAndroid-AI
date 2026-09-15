@@ -150,16 +150,13 @@ fun SwipeRevealActionItem(
                 contentColor = MaterialTheme.colorScheme.error,
                 modifier = Modifier.fillMaxHeight().width(actionWidth).then(actionModifier)
             ) {
+                // Keep the action composed throughout the drag so its hit target stays stable.
                 IconButton(
                     onClick = onAction,
                     enabled = actionEnabled,
-                    modifier = Modifier.fillMaxSize().then(
-                        if (actionVisible) {
-                            Modifier
-                        } else {
-                            Modifier.semantics { hideFromAccessibility() }
-                        }
-                    )
+                    modifier = Modifier.fillMaxSize().semantics {
+                        if (!actionVisible) hideFromAccessibility()
+                    }
                 ) {
                     Icon(
                         painter = painterResource(actionIconRes),
