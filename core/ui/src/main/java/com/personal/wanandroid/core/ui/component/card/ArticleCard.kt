@@ -74,7 +74,7 @@ fun ArticleCard(
             }
             Text(
                 text = if (metadataMode == ArticleCardMetadataMode.CATEGORY_CONTEXT) {
-                    metadata.publishedAt
+                    stringResource(R.string.article_time_compact, metadata.publishedAt)
                 } else {
                     stringResource(R.string.article_time, metadata.publishedAt)
                 },

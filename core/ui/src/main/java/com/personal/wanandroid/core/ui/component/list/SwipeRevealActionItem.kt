@@ -19,12 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -33,11 +33,16 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.personal.wanandroid.core.ui.R
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 
 private enum class SwipeRevealPosition { Closed, Action }
 
@@ -48,7 +53,9 @@ class SwipeRevealListState<K : Any> internal constructor() {
 
     internal val collapseOnVerticalScroll = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (source == NestedScrollSource.UserInput && available.y != 0f) close()
+            val isVerticalUserScroll = source == NestedScrollSource.UserInput &&
+                abs(available.y) > abs(available.x)
+            if (isVerticalUserScroll) close()
             return Offset.Zero
         }
     }
@@ -97,27 +104,41 @@ fun SwipeRevealActionItem(
     actionEnabled: Boolean = enabled,
     content: @Composable () -> Unit
 ) {
-    val state = remember(itemKey) { AnchoredDraggableState(SwipeRevealPosition.Closed) }
     val actionWidthPx = with(LocalDensity.current) { actionWidth.toPx() }
-    SideEffect {
-        state.updateAnchors(
-            DraggableAnchors {
-                SwipeRevealPosition.Closed at 0f
-                SwipeRevealPosition.Action at -actionWidthPx
+    val anchors = remember(actionWidthPx) {
+        DraggableAnchors {
+            SwipeRevealPosition.Closed at 0f
+            SwipeRevealPosition.Action at -actionWidthPx
+        }
+    }
+    val state = remember(itemKey) {
+        AnchoredDraggableState(SwipeRevealPosition.Closed, anchors)
+    }
+    LaunchedEffect(anchors) {
+        state.updateAnchors(anchors)
+    }
+    LaunchedEffect(revealed, anchors) {
+        val requestedPosition = if (revealed) {
+            SwipeRevealPosition.Action
+        } else {
+            SwipeRevealPosition.Closed
+        }
+        if (state.settledValue != requestedPosition) {
+            state.animateTo(requestedPosition)
+        }
+    }
+    LaunchedEffect(state) {
+        snapshotFlow { state.settledValue }
+            .distinctUntilChanged()
+            .drop(1)
+            .collect { position ->
+                when (position) {
+                    SwipeRevealPosition.Closed -> onClosed()
+                    SwipeRevealPosition.Action -> onRevealed()
+                }
             }
-        )
     }
-    LaunchedEffect(revealed) {
-        if (!revealed && state.settledValue != SwipeRevealPosition.Closed) {
-            state.animateTo(SwipeRevealPosition.Closed)
-        }
-    }
-    LaunchedEffect(state.settledValue) {
-        when (state.settledValue) {
-            SwipeRevealPosition.Closed -> onClosed()
-            SwipeRevealPosition.Action -> onRevealed()
-        }
-    }
+    val actionVisible = state.targetValue == SwipeRevealPosition.Action
     Box(modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier.matchParentSize().padding(contentPadding),
@@ -129,18 +150,22 @@ fun SwipeRevealActionItem(
                 contentColor = MaterialTheme.colorScheme.error,
                 modifier = Modifier.fillMaxHeight().width(actionWidth).then(actionModifier)
             ) {
-                if (state.targetValue == SwipeRevealPosition.Action) {
-                    IconButton(
-                        onClick = onAction,
-                        enabled = actionEnabled,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            painter = painterResource(actionIconRes),
-                            contentDescription = actionContentDescription,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                IconButton(
+                    onClick = onAction,
+                    enabled = actionEnabled,
+                    modifier = Modifier.fillMaxSize().then(
+                        if (actionVisible) {
+                            Modifier
+                        } else {
+                            Modifier.semantics { hideFromAccessibility() }
+                        }
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(actionIconRes),
+                        contentDescription = actionContentDescription.takeIf { actionVisible },
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
