@@ -25,7 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -45,15 +45,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.data.model.ThemeModePreference
@@ -65,10 +64,12 @@ import com.personal.wanandroid.core.designsystem.theme.WanSpacing
 import com.personal.wanandroid.core.designsystem.theme.swatches
 import com.personal.wanandroid.core.model.auth.AuthNotice
 import com.personal.wanandroid.core.model.auth.AuthStatus
+import com.personal.wanandroid.core.ui.R as CoreUiR
 import com.personal.wanandroid.core.ui.component.list.AppListItem
 import com.personal.wanandroid.core.ui.component.list.SettingsSectionLabel
 import com.personal.wanandroid.core.ui.component.network.errorMessage
 import com.personal.wanandroid.core.ui.component.scaffold.AppScaffold
+import com.personal.wanandroid.core.ui.component.scaffold.AppTopBar
 import com.personal.wanandroid.feature.profile.R
 import com.personal.wanandroid.feature.profile.state.AccountUiState
 import com.personal.wanandroid.feature.profile.state.ThemeSettingsUiState
@@ -126,13 +127,37 @@ fun ProfileScreen(
         SettingsSectionLabel(stringResource(R.string.my_content))
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            AppListItem(title = stringResource(R.string.collections), onClick = onCollections)
+            AppListItem(
+                title = stringResource(R.string.collections),
+                onClick = onCollections,
+                leadingContent = {
+                    Icon(
+                        painter = painterResource(CoreUiR.drawable.ic_bookmark),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                trailingContent = { NavigationChevron() }
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            AppListItem(title = stringResource(R.string.history), onClick = onHistory)
+            AppListItem(
+                title = stringResource(R.string.history),
+                onClick = onHistory,
+                leadingContent = {
+                    Icon(
+                        painter = painterResource(CoreUiR.drawable.ic_history),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                trailingContent = { NavigationChevron() }
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             UnavailableRow(stringResource(R.string.offline))
         }
@@ -157,7 +182,7 @@ private fun AccountCard(
     val loading = state.session.status in setOf(AuthStatus.LOADING, AuthStatus.VERIFYING)
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -165,10 +190,28 @@ private fun AccountCard(
             Modifier.fillMaxWidth().padding(WanSpacing.page),
             verticalArrangement = Arrangement.spacedBy(WanSpacing.small)
         ) {
-            Text(
-                user?.displayName ?: stringResource(R.string.guest_name),
-                style = MaterialTheme.typography.titleLarge
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(CoreUiR.drawable.ic_person),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(WanSpacing.medium))
+                Text(
+                    user?.displayName ?: stringResource(R.string.guest_name),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             if (loading) Text(stringResource(R.string.session_restoring))
             if (state.session.status == AuthStatus.UNVERIFIED) {
                 Text(stringResource(R.string.session_unverified))
@@ -228,6 +271,14 @@ private fun AccountCard(
 private fun UnavailableRow(title: String) {
     ListItem(
         headlineContent = { Text(title) },
+        leadingContent = {
+            Icon(
+                painter = painterResource(CoreUiR.drawable.ic_download),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+        },
         trailingContent = {
             Text(
                 text = stringResource(R.string.pending),
@@ -253,12 +304,7 @@ private fun ThemeEntryRow(summary: String, palette: ThemePalettePreference, onCl
             )
         },
         trailingContent = {
-            Text(
-                "›",
-                fontSize = 28.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clearAndSetSemantics {}
-            )
+            NavigationChevron()
         }
     )
 }
@@ -350,24 +396,21 @@ fun ThemeSettingsScreen(
 
 @Composable
 private fun ThemeTopBar(onBack: () -> Unit) {
-    val backLabel = stringResource(R.string.back)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier.semantics { contentDescription = backLabel }
-        ) {
-            Text(
-                text = "‹",
-                fontSize = 36.sp,
-                modifier = Modifier.clearAndSetSemantics {}
-            )
-        }
-        Text(
-            text = stringResource(R.string.appearance_and_theme),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+    AppTopBar(
+        title = stringResource(R.string.appearance_and_theme),
+        backContentDescription = stringResource(R.string.back),
+        onBack = onBack
+    )
+}
+
+@Composable
+private fun NavigationChevron() {
+    Icon(
+        painter = painterResource(CoreUiR.drawable.ic_chevron_right),
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(24.dp)
+    )
 }
 
 @Composable
@@ -450,11 +493,11 @@ private fun PaletteCard(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "✓",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.clearAndSetSemantics {}
+                            Icon(
+                                painter = painterResource(CoreUiR.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }

@@ -2,7 +2,6 @@ package com.personal.wanandroid.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 
@@ -15,7 +14,7 @@ fun WanTheme(
     val colorScheme = remember(palette, dark) { wanColorScheme(palette, dark) }
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography(),
+        typography = WanTypography,
         shapes = WanShapes,
         content = content
     )

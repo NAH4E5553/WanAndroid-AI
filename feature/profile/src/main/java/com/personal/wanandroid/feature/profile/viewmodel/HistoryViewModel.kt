@@ -38,7 +38,7 @@ class HistoryViewModel @Inject constructor(private val repository: ReadingHistor
     private fun observe() {
         observer = viewModelScope.launch {
             try {
-                repository.changes.collect { pager.reset(Unit) }
+                repository.changes.collect { pager.refresh() }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {

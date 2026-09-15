@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +22,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,6 +38,7 @@ import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.ui.R as CoreUiR
 import com.personal.wanandroid.core.ui.component.card.displayMetadata
 import com.personal.wanandroid.core.ui.component.network.NetworkListPage
+import com.personal.wanandroid.core.ui.component.scaffold.AppTopBar
 import com.personal.wanandroid.feature.home.R
 import com.personal.wanandroid.feature.home.state.DailyQuestionsUiState
 import com.personal.wanandroid.feature.home.viewmodel.DailyQuestionsViewModel
@@ -80,21 +79,11 @@ fun DailyQuestionsScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = WanSpacing.small),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(modifier = Modifier.width(72.dp)) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-            }
-            Text(
-                text = stringResource(R.string.daily_question),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(72.dp))
-        }
+        AppTopBar(
+            title = stringResource(R.string.daily_question),
+            backContentDescription = stringResource(R.string.back),
+            onBack = onBack
+        )
         NetworkListPage(
             state = uiState, keyOf = Article::id,
             emptyMessage = stringResource(R.string.questions_empty),

@@ -57,9 +57,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.common.base.state.LoadState
 import com.personal.wanandroid.core.common.base.state.PagedUiState
+import com.personal.wanandroid.core.designsystem.theme.WanSpacing
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.model.Topic
 import com.personal.wanandroid.core.ui.component.card.ArticleCard
+import com.personal.wanandroid.core.ui.component.card.ArticleCardMetadataMode
 import com.personal.wanandroid.core.ui.component.network.ErrorContent
 import com.personal.wanandroid.core.ui.component.network.LoadingContent
 import com.personal.wanandroid.core.ui.component.network.MessageCard
@@ -106,17 +108,18 @@ internal fun TopicsScreen(
     onLoadMore: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+                    .padding(horizontal = WanSpacing.page),
+                contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     stringResource(R.string.topics),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(12.dp)
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(vertical = WanSpacing.medium)
                 )
             }
             when {
@@ -138,7 +141,7 @@ internal fun TopicsScreen(
                     ) { expanded -> if (expanded) 1f else 0f }
                     Row(Modifier.weight(1f).fillMaxWidth().testTag("topic-layout")) {
                         Box(
-                            Modifier.width(100.dp * sidebarFraction).fillMaxHeight()
+                            Modifier.width(TOPIC_MENU_WIDTH * sidebarFraction).fillMaxHeight()
                                 .clipToBounds()
                                 .then(
                                     if (sidebarExpanded) {
@@ -155,9 +158,10 @@ internal fun TopicsScreen(
                                 state.selectedParentId,
                                 onSelect,
                                 Modifier.wrapContentWidth(Alignment.Start, unbounded = true)
-                                    .width(100.dp).fillMaxHeight()
+                                    .width(TOPIC_MENU_WIDTH).fillMaxHeight()
                                     .graphicsLayer {
-                                        translationX = -100.dp.toPx() * (1f - sidebarFraction)
+                                        translationX = -TOPIC_MENU_WIDTH.toPx() *
+                                            (1f - sidebarFraction)
                                         alpha = sidebarFraction
                                     }
                             )
@@ -213,7 +217,15 @@ internal fun TopicsScreen(
                                                 ),
                                                 text = {
                                                     Text(
-                                                        topic.name
+                                                        topic.name,
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        fontWeight = if (pager.currentPage ==
+                                                            index
+                                                        ) {
+                                                            FontWeight.SemiBold
+                                                        } else {
+                                                            FontWeight.Normal
+                                                        }
                                                     )
                                                 }
                                             )
@@ -258,9 +270,12 @@ internal fun TopicsScreen(
                                                     }
                                                 )
                                             ) { article ->
-                                                ArticleCard(article) {
-                                                    onArticleClick(article)
-                                                }
+                                                ArticleCard(
+                                                    article = article,
+                                                    onClick = { onArticleClick(article) },
+                                                    metadataMode =
+                                                        ArticleCardMetadataMode.CATEGORY_CONTEXT
+                                                )
                                             }
                                         }
                                     }
@@ -327,7 +342,11 @@ private fun TopicMenu(
                         topic.name,
                         color = color,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        fontWeight = if (selected) {
+                            FontWeight.SemiBold
+                        } else {
+                            FontWeight.Normal
+                        },
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 14.dp)
                     )
@@ -336,6 +355,8 @@ private fun TopicMenu(
         }
     }
 }
+
+private val TOPIC_MENU_WIDTH = 92.dp
 
 private fun DrawScope.drawTopicGroups(
     listState: LazyListState,

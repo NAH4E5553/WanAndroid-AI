@@ -147,7 +147,7 @@ class ArticleScreenTest {
             }
         }
         compose.onNodeWithText("重试").performClick()
-        compose.onNodeWithText("返回").performClick()
+        compose.onNodeWithContentDescription("返回").performClick()
         compose.runOnIdle {
             assertEquals(1, retries)
             assertEquals(1, backs)

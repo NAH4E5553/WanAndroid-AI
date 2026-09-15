@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,7 +34,12 @@ fun LoadingContent() {
 
 @Composable
 fun ErrorContent(message: String, onRetry: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)
+    ) {
         Column(
             modifier = Modifier.padding(WanSpacing.page),
             verticalArrangement = Arrangement.spacedBy(WanSpacing.medium)
@@ -46,7 +52,12 @@ fun ErrorContent(message: String, onRetry: () -> Unit) {
 
 @Composable
 fun MessageCard(message: String) {
-    Card(modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = Modifier.fillMaxWidth().padding(WanSpacing.page)
+    ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,

@@ -8,10 +8,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.personal.wanandroid.core.common.base.state.PagedUiState
@@ -56,7 +62,32 @@ class CollectionsScreenTest {
             }
         }
         compose.onNodeWithText("收藏测试文章").performClick()
-        compose.onNodeWithText("取消收藏").performClick()
+        compose.onNodeWithText("取消收藏").assertDoesNotExist()
+        compose.onNodeWithContentDescription("取消收藏").assertDoesNotExist()
+        compose.onNodeWithText("收藏测试文章").performTouchInput { swipeLeft() }
+        val itemBounds = compose.onNodeWithTag("collection-item-900")
+            .getUnclippedBoundsInRoot()
+        val backgroundBounds = compose.onNodeWithTag("collection-remove-background-900")
+            .getUnclippedBoundsInRoot()
+        val actionBounds = compose.onNodeWithContentDescription("取消收藏")
+            .getUnclippedBoundsInRoot()
+        assertEquals(
+            (itemBounds.bottom - itemBounds.top).value,
+            (backgroundBounds.bottom - backgroundBounds.top).value,
+            0.5f
+        )
+        assertEquals(
+            (backgroundBounds.left + backgroundBounds.right).value / 2f,
+            (actionBounds.left + actionBounds.right).value / 2f,
+            0.5f
+        )
+        assertEquals(
+            (backgroundBounds.top + backgroundBounds.bottom).value / 2f,
+            (actionBounds.top + actionBounds.bottom).value / 2f,
+            0.5f
+        )
+        capture("collections-swiped.png")
+        compose.onNodeWithContentDescription("取消收藏").performClick()
         compose.onNodeWithText("已经到底了").assertIsDisplayed()
         capture("collections-light.png")
         compose.runOnIdle {
@@ -69,7 +100,7 @@ class CollectionsScreenTest {
         val state =
             mutableStateOf(
                 CollectionsUiState(
-                    CollectionSnapshot(3, mapOf(item.target.key to CollectionStatus(true, true))),
+                    CollectionSnapshot(3, mapOf(item.target.key to CollectionStatus(true))),
                     PagedUiState(items = listOf(item))
                 )
             )
@@ -79,7 +110,16 @@ class CollectionsScreenTest {
                 CollectionsScreen(state.value, {}, { logins++ }, {}, {}, {}, {}, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithText("处理中…").assertIsNotEnabled()
+        compose.onNodeWithText("收藏测试文章").performTouchInput { swipeLeft() }
+        compose.runOnIdle {
+            state.value = state.value.copy(
+                collections = CollectionSnapshot(
+                    3,
+                    mapOf(item.target.key to CollectionStatus(true, true))
+                )
+            )
+        }
+        compose.onNodeWithContentDescription("处理中…").assertIsNotEnabled()
         compose.runOnIdle { state.value = state.value.copy(collections = CollectionSnapshot()) }
         compose.onNodeWithText("收藏测试文章").assertDoesNotExist()
         compose.onNodeWithText("登录").performClick()
@@ -116,9 +156,45 @@ class CollectionsScreenTest {
             }
         }
         compose.onNodeWithText("收藏测试文章").assertIsDisplayed()
-        compose.onNodeWithText("取消收藏").performClick()
+        compose.onNodeWithText("收藏测试文章").performTouchInput { swipeLeft() }
+        compose.onNodeWithContentDescription("取消收藏").performClick()
         compose.runOnIdle { assertEquals(1, removed) }
         capture("collections-dark-large.png")
+    }
+
+    @Test fun verticalListScrollClosesRevealedActionWithoutRemoving() {
+        var removed: CollectionItem? = null
+        val items = List(12) { index ->
+            CollectionItem(
+                CollectionTarget(index.toLong(), (900 + index).toLong()),
+                item.article.copy(id = index.toLong(), title = "收藏文章 $index")
+            )
+        }
+        val statuses = items.associate { it.target.key to CollectionStatus(true) }
+        compose.setContent {
+            WanTheme {
+                CollectionsScreen(
+                    state = CollectionsUiState(
+                        CollectionSnapshot(3, statuses),
+                        PagedUiState(items = items)
+                    ),
+                    onBack = {}, onLogin = {}, onArticle = {}, onRemove = { removed = it },
+                    onRefresh = {}, onRetryInitial = {}, onRetryRefresh = {},
+                    onRetryAppend = {}, onLoadMore = {}, onContinue = {}
+                )
+            }
+        }
+
+        val firstItem = compose.onNodeWithText("收藏文章 0")
+        firstItem.performTouchInput { swipeLeft() }
+        compose.onNodeWithContentDescription("取消收藏").assertIsDisplayed()
+        firstItem.performTouchInput {
+            swipeUp(startY = centerY + 40f, endY = centerY - 40f, durationMillis = 300)
+        }
+        compose.waitForIdle()
+        firstItem.assertIsDisplayed()
+        compose.onNodeWithContentDescription("取消收藏").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(null, removed) }
     }
 
     private fun capture(name: String) {

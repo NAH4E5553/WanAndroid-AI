@@ -53,6 +53,7 @@ import com.personal.wanandroid.core.model.CollectionStatus
 import com.personal.wanandroid.core.model.CollectionTarget
 import com.personal.wanandroid.core.navigation.ArticleRoute as ArticleKey
 import com.personal.wanandroid.core.result.DataError
+import com.personal.wanandroid.core.ui.R as CoreUiR
 import com.personal.wanandroid.core.ui.component.network.ErrorContent
 import com.personal.wanandroid.core.ui.component.network.MessageCard
 import com.personal.wanandroid.core.ui.component.network.errorMessage
@@ -343,7 +344,12 @@ internal fun ArticleScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(CoreUiR.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
                 },
                 actions = {
                     Box {

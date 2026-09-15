@@ -1,11 +1,11 @@
 package com.personal.wanandroid.feature.profile.view
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -24,8 +25,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.wanandroid.core.designsystem.theme.WanSpacing
 import com.personal.wanandroid.core.model.ReadingHistory
 import com.personal.wanandroid.core.ui.component.list.AppListItem
+import com.personal.wanandroid.core.ui.component.list.SwipeRevealActionItem
+import com.personal.wanandroid.core.ui.component.list.collapseSwipeRevealOnVerticalScroll
+import com.personal.wanandroid.core.ui.component.list.rememberSwipeRevealListState
 import com.personal.wanandroid.core.ui.component.network.NetworkListPage
 import com.personal.wanandroid.core.ui.component.network.errorMessage
+import com.personal.wanandroid.core.ui.component.scaffold.AppTopBar
 import com.personal.wanandroid.feature.profile.R
 import com.personal.wanandroid.feature.profile.state.HistoryUiState
 import com.personal.wanandroid.feature.profile.viewmodel.HistoryViewModel
@@ -60,25 +65,25 @@ fun HistoryScreen(
     onLoadMore: () -> Unit,
     onContinue: () -> Unit
 ) {
-    var pendingDelete by rememberSaveable { mutableStateOf<String?>(null) }
     var clearRequested by rememberSaveable { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val swipeState = rememberSwipeRevealListState<String>()
     Surface(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground
     ) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            Row(Modifier.fillMaxWidth()) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                Text(
-                    stringResource(R.string.history),
-                    Modifier.weight(1f).padding(WanSpacing.small),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                TextButton(
-                    onClick = { clearRequested = true },
-                    enabled = !state.busy && state.page.items.isNotEmpty()
-                ) { Text(stringResource(R.string.history_clear)) }
-            }
+            AppTopBar(
+                title = stringResource(R.string.history),
+                backContentDescription = stringResource(R.string.back),
+                onBack = onBack,
+                actions = {
+                    TextButton(
+                        onClick = { clearRequested = true },
+                        enabled = !state.busy && state.page.items.isNotEmpty()
+                    ) { Text(stringResource(R.string.history_clear)) }
+                }
+            )
             Text(
                 stringResource(R.string.history_local_hint),
                 Modifier.padding(horizontal = WanSpacing.page),
@@ -101,58 +106,55 @@ fun HistoryScreen(
                 onAppendRetry = onRetryAppend,
                 onLoadMore = onLoadMore,
                 onContinueAfterPause = onContinue,
-                endTextAlign = TextAlign.Center
+                endTextAlign = TextAlign.Center,
+                listState = listState,
+                modifier = Modifier.collapseSwipeRevealOnVerticalScroll(swipeState)
             ) { item ->
-                AppListItem(
-                    title = item.title,
-                    description = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                        .format(Date(item.lastReadAt)),
-                    onClick = { onArticle(item) },
-                    trailingContent = {
-                        TextButton(
-                            onClick = { pendingDelete = item.url },
-                            enabled = !state.busy
-                        ) {
-                            Text(stringResource(R.string.history_delete))
-                        }
+                SwipeRevealActionItem(
+                    itemKey = item.url,
+                    enabled = !state.busy,
+                    revealed = swipeState.isRevealed(item.url),
+                    actionContentDescription = stringResource(R.string.history_delete),
+                    contentPadding = PaddingValues(
+                        horizontal = WanSpacing.page,
+                        vertical = WanSpacing.small
+                    ),
+                    foregroundModifier = Modifier.testTag("history-item-${item.url}"),
+                    actionModifier = Modifier.testTag("history-delete-background-${item.url}"),
+                    onRevealed = { swipeState.reveal(item.url) },
+                    onClosed = { swipeState.close(item.url) },
+                    onAction = {
+                        swipeState.close()
+                        onDelete(item.url)
                     }
-                )
+                ) {
+                    AppListItem(
+                        title = item.title,
+                        description = DateFormat.getDateTimeInstance(
+                            DateFormat.SHORT,
+                            DateFormat.SHORT
+                        ).format(Date(item.lastReadAt)),
+                        onClick = { onArticle(item) }
+                    )
+                }
             }
         }
     }
-    if (clearRequested || pendingDelete != null) {
+    if (clearRequested) {
         AlertDialog(
-            onDismissRequest = {
-                clearRequested = false
-                pendingDelete = null
-            },
-            title = {
-                val title = if (clearRequested) R.string.history_clear else R.string.history_delete
-                Text(stringResource(title))
-            },
-            text = {
-                Text(
-                    stringResource(
-                        if (clearRequested) {
-                            R.string.history_clear_hint
-                        } else {
-                            R.string.history_delete_hint
-                        }
-                    )
-                )
-            },
+            onDismissRequest = { clearRequested = false },
+            title = { Text(stringResource(R.string.history_clear)) },
+            text = { Text(stringResource(R.string.history_clear_hint)) },
             confirmButton = {
                 TextButton(enabled = !state.busy, onClick = {
-                    if (clearRequested) onClear() else pendingDelete?.let(onDelete)
+                    onClear()
                     clearRequested = false
-                    pendingDelete = null
                 }) { Text(stringResource(R.string.history_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    clearRequested = false
-                    pendingDelete = null
-                }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = { clearRequested = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         )
     }
