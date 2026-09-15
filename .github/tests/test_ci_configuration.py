@@ -90,6 +90,15 @@ class WorkflowContracts(unittest.TestCase):
         self.assertEqual("python3 .github/scripts/verify_test_aggregation.py", step["run"])
         self.assertNotIn("continue-on-error", step)
 
+    def test_android_setup_does_not_request_retired_tools_package(self):
+        steps = workflow("android.yml")["jobs"]["checks"]["steps"]
+        setup = next(
+            step
+            for step in steps
+            if step.get("uses", "").startswith("android-actions/setup-android@")
+        )
+        self.assertEqual("", setup["with"]["packages"])
+
     def test_configuration_checks_run_before_classification(self):
         steps = workflow("android.yml")["jobs"]["changes"]["steps"]
         tests = next(i for i, step in enumerate(steps) if "unittest" in step.get("run", ""))

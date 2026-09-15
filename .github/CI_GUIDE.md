@@ -32,6 +32,7 @@ PR 分类基于 merge-base 到 head；push 分类基于 before 到 head。关闭
 CI Configuration 失败时，其余五项检查使用 always() 和显式状态校验一起失败，不静默跳过。
 
 JDK 17；保留 setup-gradle 缓存，PR 只读缓存，main 可写。checkout 不持久化 Git 凭据。
+GitHub 托管 Runner 已预装 Android command-line tools 与 platform-tools；setup-android 显式传入空 `packages`，避免其默认请求已从 SDK 仓库移除的旧 `tools` 包。编译所需平台和 Build Tools 仍由 Runner 预装 SDK/Gradle 正常解析。
 测试、Lint 报告以及 Debug APK 可作为 Artifact 保留 7 天；这些不是正式签名发布产物。
 main 已按 GitHub 实际显示名称将上述六项配置为必需检查，并要求 PR、分支同步和讨论解决；审批人数为 0，管理员不可绕过，禁止强推和删除。OCR 不设为必需检查。
 目前不启用 merge queue；如果以后启用，需要补充 merge_group 事件和分类策略再验证。

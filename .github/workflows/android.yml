@@ -121,6 +121,10 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         if: needs.changes.outputs.run_android == 'true'
+        with:
+          # GitHub runners already provide command-line/platform tools. The action's
+          # default also requests the retired SDK package named "tools".
+          packages: ''
       - uses: gradle/actions/setup-gradle@v4
         if: needs.changes.outputs.run_android == 'true'
         with:
