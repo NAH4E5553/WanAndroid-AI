@@ -27,8 +27,8 @@ fun AppListItem(
     description: String? = null,
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
-    minHeight: Dp = 72.dp,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    minHeight: Dp = 64.dp,
     onClick: (() -> Unit)? = null
 ) {
     Surface(
@@ -38,7 +38,10 @@ fun AppListItem(
             .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick))
     ) {
         Row(
-            modifier = Modifier.padding(WanSpacing.page),
+            modifier = Modifier.padding(
+                horizontal = WanSpacing.page,
+                vertical = WanSpacing.medium
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             leadingContent?.let {

@@ -45,11 +45,12 @@ class HistoryViewModelTest {
         var calls = mutableListOf<Int>()
         var fail = false
         var writes = 0
-        var gate: CompletableDeferred<Unit>? = null
+        var pageGate: CompletableDeferred<Unit>? = null
+        var writeGate: CompletableDeferred<Unit>? = null
         override suspend fun page(page: Int): DataResult<PageResult<ReadingHistory>> {
             calls.add(page)
             val snapshot = rows
-            gate?.await()
+            pageGate?.await()
             return if (fail) {
                 DataResult.Failure(DataError.STORAGE)
             } else {
@@ -72,7 +73,7 @@ class HistoryViewModelTest {
             DataResult.Success(Unit)
         override suspend fun delete(url: String): DataResult<Unit> {
             writes++
-            gate?.await()
+            writeGate?.await()
             if (fail) return DataResult.Failure(DataError.STORAGE)
             rows = rows.filterNot { it.url == url }
             invalidations.emit(Unit)
@@ -94,17 +95,65 @@ class HistoryViewModelTest {
         assertTrue(vm.uiState.value.page.items.isEmpty())
     }
 
+    @Test fun deleteKeepsRowsVisibleWhileDatabaseRefreshIsPending() = runTest(dispatcher) {
+        val repo = Repository()
+        val vm = HistoryViewModel(repo)
+        runCurrent()
+        val deletedUrl = repo.rows.single().url
+        repo.pageGate = CompletableDeferred()
+
+        vm.delete(deletedUrl)
+        runCurrent()
+
+        assertTrue(vm.uiState.value.page.isRefreshing)
+        assertEquals(listOf(deletedUrl), vm.uiState.value.page.items.map(ReadingHistory::url))
+        assertFalse(vm.uiState.value.page.isInitialLoading)
+
+        repo.pageGate!!.complete(Unit)
+        runCurrent()
+
+        assertFalse(vm.uiState.value.page.isRefreshing)
+        assertTrue(vm.uiState.value.page.items.isEmpty())
+    }
+
+    @Test fun deleteOnlyRemovesTargetAfterPreservingOtherRowsDuringRefresh() = runTest(dispatcher) {
+        val repo = Repository().apply {
+            rows = listOf(
+                ReadingHistory("https://fixture.invalid/first", 1, "First", 2),
+                ReadingHistory("https://fixture.invalid/second", 2, "Second", 1)
+            )
+        }
+        val vm = HistoryViewModel(repo)
+        runCurrent()
+        repo.pageGate = CompletableDeferred()
+
+        vm.delete(repo.rows.first().url)
+        runCurrent()
+
+        assertTrue(vm.uiState.value.page.isRefreshing)
+        assertEquals(2, vm.uiState.value.page.items.size)
+        assertFalse(vm.uiState.value.page.isInitialLoading)
+
+        repo.pageGate!!.complete(Unit)
+        runCurrent()
+
+        assertEquals(
+            listOf("https://fixture.invalid/second"),
+            vm.uiState.value.page.items.map(ReadingHistory::url)
+        )
+    }
+
     @Test fun failedWriteKeepsRowsAndDuplicateWritesDoNotQueue() = runTest(dispatcher) {
         val repo = Repository()
         val vm = HistoryViewModel(repo)
         runCurrent()
         repo.fail = true
-        repo.gate = CompletableDeferred()
+        repo.writeGate = CompletableDeferred()
         vm.clear()
         vm.clear()
         runCurrent()
         assertEquals(1, repo.writes)
-        repo.gate!!.complete(Unit)
+        repo.writeGate!!.complete(Unit)
         runCurrent()
         assertEquals(DataError.STORAGE, vm.uiState.value.error)
         assertEquals(1, vm.uiState.value.page.items.size)
@@ -115,11 +164,11 @@ class HistoryViewModelTest {
         val repo = Repository()
         val vm = HistoryViewModel(repo)
         runCurrent()
-        repo.gate = CompletableDeferred()
+        repo.pageGate = CompletableDeferred()
         vm.loadMore()
         runCurrent()
         repo.rows = emptyList()
-        repo.gate = null
+        repo.pageGate = null
         repo.invalidations.emit(Unit)
         runCurrent()
         assertTrue(vm.uiState.value.page.items.isEmpty())

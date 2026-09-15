@@ -9,6 +9,7 @@
     <string name="article_sharer">分享者：%1$s</string>
     <string name="article_category">分类：%1$s</string>
     <string name="article_time">时间：%1$s</string>
+    <string name="article_time_compact">%1$s</string>
     <string name="metadata_unknown">未知</string>
     <string name="error_storage">本地会话保存失败，请重试</string>
     <string name="error_session_changed">登录状态已变化，请重试。</string>

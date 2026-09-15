@@ -1,6 +1,8 @@
 package com.personal.wanandroid.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -35,5 +37,16 @@ class WanThemeTest {
                 assertNotEquals(Color.Unspecified, scheme.primaryFixed)
             }
         }
+    }
+
+    @Test
+    fun typographyDefinesAReadableContentHierarchy() {
+        assertEquals(24.sp, WanTypography.headlineMedium.fontSize)
+        assertEquals(32.sp, WanTypography.headlineMedium.lineHeight)
+        assertEquals(FontWeight.SemiBold, WanTypography.headlineMedium.fontWeight)
+        assertEquals(16.sp, WanTypography.titleMedium.fontSize)
+        assertEquals(24.sp, WanTypography.titleMedium.lineHeight)
+        assertEquals(14.sp, WanTypography.bodyMedium.fontSize)
+        assertEquals(22.sp, WanTypography.bodyMedium.lineHeight)
     }
 }

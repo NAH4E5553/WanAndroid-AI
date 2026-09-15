@@ -1,10 +1,13 @@
 package com.personal.wanandroid.core.ui.component.card
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,18 +15,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.unit.dp
 import com.personal.wanandroid.core.designsystem.theme.WanSpacing
 import com.personal.wanandroid.core.model.Article
 import com.personal.wanandroid.core.ui.R
 
+enum class ArticleCardMetadataMode {
+    FULL,
+    CATEGORY_CONTEXT
+}
+
 @Composable
-fun ArticleCard(article: Article, onClick: () -> Unit) {
+fun ArticleCard(
+    article: Article,
+    onClick: () -> Unit,
+    metadataMode: ArticleCardMetadataMode = ArticleCardMetadataMode.FULL,
+    modifier: Modifier = Modifier,
+    outerPadding: PaddingValues = PaddingValues(
+        horizontal = WanSpacing.page,
+        vertical = WanSpacing.small
+    )
+) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(
-            horizontal = WanSpacing.page,
-            vertical = WanSpacing.small
-        )
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.fillMaxWidth().padding(outerPadding)
     ) {
         Column(
             modifier = Modifier.padding(WanSpacing.page),
@@ -43,16 +62,22 @@ fun ArticleCard(article: Article, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (metadataMode == ArticleCardMetadataMode.FULL) {
+                Text(
+                    text = stringResource(
+                        R.string.article_category,
+                        metadata.category
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             Text(
-                text = stringResource(
-                    R.string.article_category,
-                    metadata.category
-                ),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = stringResource(R.string.article_time, metadata.publishedAt),
+                text = if (metadataMode == ArticleCardMetadataMode.CATEGORY_CONTEXT) {
+                    stringResource(R.string.article_time_compact, metadata.publishedAt)
+                } else {
+                    stringResource(R.string.article_time, metadata.publishedAt)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -361,6 +361,23 @@ class TopicsScreenTest {
         capture("topics-light")
     }
 
+    @Test fun topicCardsDoNotRepeatTheSelectedCategoryAndKeepTimeBelowTheByline() {
+        mount()
+        compose.onNodeWithText("分类：开发环境/分类 11").assertDoesNotExist()
+        val bylineBounds = compose.onNodeWithText(
+            "作者：作者 11-1",
+            useUnmergedTree = true
+        ).assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val timeBounds = compose.onNodeWithText(
+            "时间 11-1",
+            useUnmergedTree = true
+        ).assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("时间：时间 11-1").assertDoesNotExist()
+        assertTrue(timeBounds.top > bylineBounds.top)
+    }
+
     @Test fun darkLargeFontLayoutRemainsSelectable() {
         mount(dark = true, fontScale = 1.5f)
         compose.onNodeWithTag("topic-tab-20").performClick()
@@ -406,8 +423,9 @@ private class ScreenRepository : ArticleRepository {
             PageResult(
                 range.map { n ->
                     Article(
-                        id * 1000 + n, "文章 $id-$n", "https://reader.invalid/$id/$n", "作者", "",
-                        "开发环境", "分类 $id", "今天", false
+                        id * 1000 + n, "文章 $id-$n", "https://reader.invalid/$id/$n",
+                        "作者 $id-$n", "",
+                        "开发环境", "分类 $id", "时间 $id-$n", false
                     )
                 },
                 if (page == 0) 1 else null
